@@ -28,14 +28,12 @@ A native macOS app for converting files between dozens of formats &mdash; **full
 
 1. Download the latest **`.dmg`** from [Releases](https://github.com/WinyJef-f/ULTIMATE-FILE-CONVERTER/releases/latest)
 2. Open the DMG and double-click the **`.pkg`** inside
-3. Step through the installer &mdash; it installs every dependency for you (via Homebrew)
+3. Click through the installer &mdash; that's it
 4. Open **ULTIMATE-FILE-CONVERTER** from your Applications folder
 
-> **First-time setup takes 10&ndash;20 minutes** because LibreOffice is ~600 MB. Progress is logged to `/tmp/ufc-install.log` &mdash; you can `tail -f` it in Terminal to watch.
+**Completely self-contained.** No Homebrew, no terminal commands, no extra downloads. Everything the app needs &mdash; FFmpeg, LibreOffice, Pandoc &mdash; ships inside the `.app`. Image, SVG, and PDF rasterization use macOS&rsquo;s built-in frameworks (CGImage / NSImage / CGPDFDocument).
 
-**Why a `.pkg` inside a `.dmg`?** The package runs a post-install script that automatically installs Homebrew (if missing) and every required tool. You don&rsquo;t have to hunt down half a dozen separate command-line tools yourself.
-
-The app is not notarized (yet), so on first launch macOS may show a Gatekeeper warning. Right-click &rarr; Open the first time, or run `xattr -dr com.apple.quarantine /Applications/ULTIMATE-FILE-CONVERTER.app`.
+The app is not notarized, so on first launch macOS may show a Gatekeeper warning. Right-click &rarr; Open the first time, or run `xattr -dr com.apple.quarantine /Applications/ULTIMATE-FILE-CONVERTER.app`.
 
 ## Supported formats
 
@@ -80,17 +78,14 @@ open ULTIMATE-FILE-CONVERTER.xcodeproj
 - **`AppViewModel`** owns the queue, settings, and persistent history. Settings persist in `UserDefaults`; history is JSON in `~/Library/Application Support/ULTIMATE-FILE-CONVERTER/history.json`.
 - **Tools are not bundled.** The app calls into whatever Homebrew installed. This keeps the app tiny (~1 MB) and avoids redistribution complications. The installer handles dependency setup.
 
-## Bundled tools (installed via Homebrew)
+## What does the heavy lifting
 
 | Tool | Purpose | License |
 |---|---|---|
-| [FFmpeg](https://ffmpeg.org) | Audio, video, most image formats | LGPL 2.1+ / GPL 2+ |
-| [ImageMagick](https://imagemagick.org) | Exotic image formats (AVIF, HEIC, SVG, ICO) | Apache 2.0 |
+| [FFmpeg](https://ffmpeg.org) | Audio, video, and cross-media conversions | LGPL 2.1+ |
+| [LibreOffice](https://www.libreoffice.org) (headless) | Office formats and PDF export | MPL 2.0 |
 | [Pandoc](https://pandoc.org) | Markup-to-markup document conversion | GPL 2+ |
-| [LibreOffice](https://www.libreoffice.org) | Office formats + PDF export | MPL 2.0 |
-| [Ghostscript](https://www.ghostscript.com) | PDF rasterization | AGPL 3.0 |
-| [p7zip](https://github.com/jinfeihan57/p7zip) | Archive support | LGPL 2.1+ |
-| [librsvg](https://wiki.gnome.org/Projects/LibRsvg) | SVG rendering | LGPL 2.1+ |
+| Apple&rsquo;s CGImage / NSImage / CGPDFDocument | Image, SVG, and PDF rasterization | Apple system frameworks |
 
 ## License
 

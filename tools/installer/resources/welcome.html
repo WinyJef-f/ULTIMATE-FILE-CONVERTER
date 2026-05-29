@@ -2,27 +2,30 @@
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="light">
 <style>
-body { font: 13px -apple-system, "Helvetica Neue", sans-serif; color: #1d1d1f; padding: 22px 24px; line-height: 1.55; }
+:root { color-scheme: light; }
+html, body { background: #ffffff; color: #1d1d1f; }
+body { font: 13px -apple-system, "Helvetica Neue", sans-serif; padding: 22px 24px; line-height: 1.55; }
 h1 { font-size: 20px; margin: 0 0 12px; color: #0f766e; }
-p { margin: 8px 0; }
-ul { margin: 10px 0; padding-left: 22px; }
-li { margin: 4px 0; }
+p { margin: 8px 0; color: #1d1d1f; }
+ul { margin: 10px 0; padding-left: 22px; color: #1d1d1f; }
+li { margin: 4px 0; color: #1d1d1f; }
 .note { color: #6e6e73; font-size: 12px; margin-top: 14px; }
 </style>
 </head>
 <body>
 <h1>Welcome to ULTIMATE-FILE-CONVERTER</h1>
-<p>This installer places the app in your Applications folder and sets up everything it needs to actually convert files.</p>
-<p>The post-install step uses Homebrew to install:</p>
+<p>This installer places the app in your Applications folder. That&rsquo;s it. There&rsquo;s nothing else to download or set up.</p>
+<p>ULTIMATE-FILE-CONVERTER is self-contained: every conversion tool it needs is already inside the app. You get full support for:</p>
 <ul>
-<li><b>FFmpeg</b> — audio, video, and most image formats</li>
-<li><b>ImageMagick</b> — exotic image formats (AVIF, HEIC, SVG, ICO, …)</li>
-<li><b>Pandoc</b> — document formats (Markdown, HTML, DOCX, EPUB, LaTeX, …)</li>
-<li><b>LibreOffice</b> — Office documents (.docx / .xlsx / .pptx) and PDF export</li>
-<li><b>Ghostscript, p7zip, librsvg</b> — supporting tools</li>
+<li><b>Images</b> &mdash; JPEG, PNG, WebP, HEIC, AVIF, GIF, BMP, TIFF, SVG, ICO</li>
+<li><b>Audio</b> &mdash; MP3, WAV, FLAC, AAC, M4A, OGG, OPUS, AIFF</li>
+<li><b>Video</b> &mdash; MP4, MOV, MKV, WebM, AVI</li>
+<li><b>Documents</b> &mdash; PDF, DOCX, ODT, RTF, HTML, Markdown, EPUB, LaTeX</li>
+<li><b>Spreadsheets</b> &mdash; XLSX, ODS, CSV</li>
+<li><b>Presentations</b> &mdash; PPTX, ODP</li>
 </ul>
-<p>If Homebrew isn&rsquo;t already installed, it will be set up automatically.</p>
-<p class="note">The first install can take 10&ndash;20 minutes (LibreOffice alone is ~600 MB). Progress is logged to <code>/tmp/ufc-install.log</code> if you want to follow along in Terminal with <code>tail -f /tmp/ufc-install.log</code>.</p>
+<p class="note">No accounts, no network calls, no usage tracking. Every file you convert stays on this Mac.</p>
 </body>
 </html>

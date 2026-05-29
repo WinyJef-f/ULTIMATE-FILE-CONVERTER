@@ -55,16 +55,22 @@ enum ConversionRouter {
         let src = source.category
         let dst = target.category
 
-        // --- SVG source: render via rsvg-convert; chain through magick if needed ---
+        // --- SVG source: render natively via NSImage (handles WebKit-backed SVG) ---
         if source == .svg && dst == .image {
-            return svgRoute(target: target, inputURL: inputURL, outputURL: outputURL, settings: settings)
+            return ConversionPlan(
+                tool: .native,
+                arguments: ["svg", "{INPUT}", "{OUTPUT}",
+                            "\(settings.imageQuality)", target.rawValue],
+                input: inputURL, output: outputURL
+            )
         }
 
-        // --- Image -> Image via ImageMagick (broader format support than ffmpeg) ---
+        // --- Image -> Image via macOS native CGImage frameworks (no external deps) ---
         if src == .image && dst == .image {
             return ConversionPlan(
-                tool: .magick,
-                arguments: ["{INPUT}", "-quality", "\(settings.imageQuality)", "{OUTPUT}"],
+                tool: .native,
+                arguments: ["image", "{INPUT}", "{OUTPUT}",
+                            "\(settings.imageQuality)", target.rawValue],
                 input: inputURL, output: outputURL
             )
         }
@@ -153,12 +159,12 @@ enum ConversionRouter {
             )
         }
 
-        // --- PDF -> Image: rasterize first page via magick (uses ghostscript) ---
+        // --- PDF -> Image: rasterize first page via native CGPDFDocument ---
         if source == .pdf && dst == .image {
             return ConversionPlan(
-                tool: .magick,
-                arguments: ["-density", "200", "{INPUT}[0]",
-                            "-quality", "\(settings.imageQuality)", "{OUTPUT}"],
+                tool: .native,
+                arguments: ["pdf", "{INPUT}", "{OUTPUT}",
+                            "200", "\(settings.imageQuality)", target.rawValue],
                 input: inputURL, output: outputURL
             )
         }
@@ -202,34 +208,6 @@ enum ConversionRouter {
         FileKind.allCases.filter { $0 != source && canConvert(from: source, to: $0, settings: settings) }
     }
 
-    // MARK: - SVG routing
-
-    private static func svgRoute(target: FileKind, inputURL: URL, outputURL: URL,
-                                  settings: ConversionSettings) -> ConversionPlan? {
-        // rsvg-convert outputs PNG directly. PDF is also supported natively.
-        if target == .png {
-            return ConversionPlan(
-                tool: .rsvgConvert,
-                arguments: ["-f", "png", "-o", "{OUTPUT}", "{INPUT}"],
-                input: inputURL, output: outputURL
-            )
-        }
-        // For any other raster target, render to intermediate PNG then convert via magick.
-        let intermediate = intermediateURL(for: inputURL, extension: "png")
-        return ConversionPlan(steps: [
-            ConversionStep(
-                tool: .rsvgConvert,
-                argumentTemplate: ["-f", "png", "-o", "{OUTPUT}", "{INPUT}"],
-                inputURL: inputURL, outputURL: intermediate
-            ),
-            ConversionStep(
-                tool: .magick,
-                argumentTemplate: ["{INPUT}", "-quality", "\(settings.imageQuality)", "{OUTPUT}"],
-                inputURL: intermediate, outputURL: outputURL
-            )
-        ])
-    }
-
     private static func intermediateURL(for source: URL, extension ext: String) -> URL {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("ULTIMATE-FILE-CONVERTER", isDirectory: true)
@@ -265,9 +243,13 @@ enum ConversionRouter {
     }
 
     private static func sofficePlan(target: FileKind, inputURL: URL, outputURL: URL) -> ConversionPlan {
-        ConversionPlan(
+        // Use an isolated profile directory so our bundled soffice doesn't fight
+        // a user's separately-installed LibreOffice (if any) over the default profile.
+        let profileDir = NSTemporaryDirectory().appending("ULTIMATE-FILE-CONVERTER-soffice/")
+        return ConversionPlan(
             tool: .soffice,
             arguments: [
+                "-env:UserInstallation=file://\(profileDir)",
                 "--headless",
                 "--convert-to", target.canonicalExtension,
                 "--outdir", "{OUTPUT_DIR}",
@@ -322,12 +304,14 @@ enum ConversionRouter {
             return ConversionPlan(tool: .ffmpeg, arguments: ffmpegArgs,
                                   input: inputURL, output: outputURL)
         }
+        // ffmpeg writes PNG, native CGImage transcodes to the final target format.
         let intermediate = intermediateURL(for: inputURL, extension: "png")
         return ConversionPlan(steps: [
             ConversionStep(tool: .ffmpeg, argumentTemplate: ffmpegArgs,
                            inputURL: inputURL, outputURL: intermediate),
-            ConversionStep(tool: .magick,
-                           argumentTemplate: ["{INPUT}", "-quality", "\(settings.imageQuality)", "{OUTPUT}"],
+            ConversionStep(tool: .native,
+                           argumentTemplate: ["image", "{INPUT}", "{OUTPUT}",
+                                              "\(settings.imageQuality)", target.rawValue],
                            inputURL: intermediate, outputURL: outputURL)
         ])
     }

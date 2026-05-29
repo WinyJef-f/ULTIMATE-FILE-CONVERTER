@@ -7,14 +7,16 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 BUNDLE_ID="com.jeffreyheiler.UltimateFileConverter"
 APP_NAME="ULTIMATE-FILE-CONVERTER"
 
 DIST_DIR="$PROJECT_DIR/dist"
-BUILD_DIR="$PROJECT_DIR/build-release"
 SCRATCH=$(mktemp -d)
-trap "rm -rf '$SCRATCH'" EXIT
+# Derived data lives inside the scratch dir so each build starts clean —
+# avoids ad-hoc-signed stale binaries blocking the next build.
+BUILD_DIR="$SCRATCH/build-release"
+trap "rm -rf '$SCRATCH' 2>/dev/null || true" EXIT
 
 mkdir -p "$DIST_DIR"
 
@@ -42,19 +44,21 @@ if [[ ! -d "$RELEASE_APP" ]]; then
 fi
 echo "    .app at $RELEASE_APP ($(du -sh "$RELEASE_APP" | cut -f1))"
 
+echo "==> Bundling tools (ffmpeg / magick / pandoc / gs / rsvg-convert / LibreOffice) into .app ..."
+"$PROJECT_DIR/tools/bundle-tools.sh" "$RELEASE_APP"
+
 echo "==> Staging payload..."
 PAYLOAD_ROOT="$SCRATCH/payload"
 mkdir -p "$PAYLOAD_ROOT/Applications"
 cp -R "$RELEASE_APP" "$PAYLOAD_ROOT/Applications/"
 
-echo "==> Building component pkg..."
+echo "==> Building component pkg (no postinstall — everything is bundled)..."
 COMPONENT_PKG="$SCRATCH/component.pkg"
 /usr/bin/pkgbuild \
     --root "$PAYLOAD_ROOT" \
     --identifier "$BUNDLE_ID" \
     --version "$VERSION" \
     --install-location "/" \
-    --scripts "$PROJECT_DIR/tools/installer/scripts" \
     "$COMPONENT_PKG"
 
 echo "==> Building distribution pkg..."

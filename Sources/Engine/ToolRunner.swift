@@ -27,13 +27,11 @@ extension Tool {
     var brewFormula: String {
         switch self {
         case .ffmpeg: return "ffmpeg"
-        case .magick: return "imagemagick"
         case .pandoc: return "pandoc"
         case .soffice: return "--cask libreoffice"
-        case .ghostscript: return "ghostscript"
         case .sevenZip: return "p7zip"
-        case .rsvgConvert: return "librsvg"
         case .cp: return "" // /bin/cp is built into macOS
+        case .native: return "" // not an external tool
         }
     }
 }
@@ -45,6 +43,14 @@ enum ToolRunner {
         var lastResult = ProcessResult(exitCode: 0, stdout: "", stderr: "")
         for step in plan.steps {
             try Task.checkCancellation()
+
+            // Native steps are executed in-process by NativeConverter, not as a subprocess.
+            if step.tool == .native {
+                lastResult = try await NativeConverter.run(arguments: step.resolvedArguments())
+                try Task.checkCancellation()
+                continue
+            }
+
             guard let executable = step.tool.resolveExecutablePath() else {
                 throw ToolRunnerError.toolNotFound(step.tool)
             }

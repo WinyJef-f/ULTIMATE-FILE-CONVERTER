@@ -6,7 +6,7 @@
     <welcome file="welcome.html" mime-type="text/html"/>
     <license file="license.html" mime-type="text/html"/>
     <readme file="readme.html" mime-type="text/html"/>
-    <options customize="never" require-scripts="true" rootVolumeOnly="true" allow-external-scripts="no"/>
+    <options customize="never" require-scripts="false" rootVolumeOnly="true" allow-external-scripts="no"/>
     <choices-outline>
         <line choice="default">
             <line choice="com.jeffreyheiler.UltimateFileConverter"/>
@@ -16,5 +16,5 @@
     <choice id="com.jeffreyheiler.UltimateFileConverter" visible="false">
         <pkg-ref id="com.jeffreyheiler.UltimateFileConverter"/>
     </choice>
-    <pkg-ref id="com.jeffreyheiler.UltimateFileConverter" version="1.0.0" onConclusion="none">component.pkg</pkg-ref>
+    <pkg-ref id="com.jeffreyheiler.UltimateFileConverter" version="1.0.1" onConclusion="none">component.pkg</pkg-ref>
 </installer-gui-script>

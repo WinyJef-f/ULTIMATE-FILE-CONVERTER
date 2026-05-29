@@ -2,30 +2,32 @@
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="light">
 <style>
-body { font: 13px -apple-system, "Helvetica Neue", sans-serif; color: #1d1d1f; padding: 22px 24px; line-height: 1.55; }
+:root { color-scheme: light; }
+html, body { background: #ffffff; color: #1d1d1f; }
+body { font: 13px -apple-system, "Helvetica Neue", sans-serif; padding: 22px 24px; line-height: 1.55; }
 h1 { font-size: 20px; margin: 0 0 12px; color: #0f766e; }
-h2 { font-size: 15px; margin: 18px 0 6px; }
-p { margin: 8px 0; }
-code { background: #f5f5f7; padding: 1px 6px; border-radius: 4px; font: 12px "SF Mono", Menlo, monospace; }
-pre { background: #f5f5f7; padding: 10px 12px; border-radius: 6px; font: 12px "SF Mono", Menlo, monospace; }
+h2 { font-size: 15px; margin: 18px 0 6px; color: #1d1d1f; }
+p  { margin: 8px 0; color: #1d1d1f; }
+code { background: #f5f5f7; color: #1d1d1f; padding: 1px 6px; border-radius: 4px; font: 12px "SF Mono", Menlo, monospace; }
+ul { margin: 8px 0; padding-left: 22px; color: #1d1d1f; }
+li { margin: 3px 0; color: #1d1d1f; }
 </style>
 </head>
 <body>
-<h1>After installing</h1>
-<p>Open <b>ULTIMATE-FILE-CONVERTER</b> from your Applications folder. Drag any file into the window, pick a target format, and click <b>Convert</b>.</p>
+<h1>You&rsquo;re done</h1>
+<p>Open <b>ULTIMATE-FILE-CONVERTER</b> from your Applications folder. Drag any file into the window, pick a target format, click <b>Convert</b>. Output files land next to the original (or wherever you set the output folder in Settings).</p>
 
-<h2>If the automatic setup fails</h2>
-<p>Check the log first:</p>
-<pre>tail -f /tmp/ufc-install.log</pre>
-<p>To finish setup manually, install Homebrew from <a href="https://brew.sh">brew.sh</a>, then in Terminal run:</p>
-<pre>brew install ffmpeg imagemagick pandoc ghostscript p7zip librsvg
-brew install --cask libreoffice</pre>
+<h2>Quick tips</h2>
+<ul>
+<li>Drop multiple files at once for batch conversion.</li>
+<li>Open <b>Settings</b> (<code>&#x2318;,</code>) to tune image quality, audio bitrate, video CRF, and the output folder.</li>
+<li>Press <code>&#x2318;R</code> to start a conversion, or <b>Cancel</b> to abort cleanly &mdash; in-flight conversions terminate immediately.</li>
+<li>The <b>Recent</b> section keeps your last 100 conversions and survives quitting the app.</li>
+</ul>
 
 <h2>Removing</h2>
-<p>To uninstall, drag <b>ULTIMATE-FILE-CONVERTER</b> from Applications to the Trash. Homebrew tools that were installed will stay on your Mac and remain useful for other apps; remove them with <code>brew uninstall</code> if you don&rsquo;t want them.</p>
-
-<h2>Bundled tool licenses</h2>
-<p>ULTIMATE-FILE-CONVERTER does not redistribute the bundled tools &mdash; it invokes whichever versions Homebrew installed on your Mac. Each tool retains its own license (LGPL, GPL, BSD, MPL depending on the formula).</p>
+<p>To uninstall, drag <b>ULTIMATE-FILE-CONVERTER</b> from Applications to the Trash. That&rsquo;s the only thing the installer added &mdash; nothing else on your Mac was touched.</p>
 </body>
 </html>
