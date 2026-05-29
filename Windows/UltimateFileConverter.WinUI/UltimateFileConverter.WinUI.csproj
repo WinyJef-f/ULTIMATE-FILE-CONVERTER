@@ -11,6 +11,10 @@
 
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <!-- Constrain the RID set to x64. Left unset, WindowsAppSDK/CsWinRT inject the legacy
+         win10-* (incl. ARM32) and *-aot RIDs; .NET then has no runtime pack for win10-arm
+         and fails with NETSDK1082. We only ship x64, so this is the full supported set. -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
 
     <!-- Unpackaged, fully self-contained: no separate .NET or Windows App SDK runtime install needed. -->
