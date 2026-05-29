@@ -18,7 +18,8 @@
 param(
     [string]$Configuration = "Release",
     [string]$Version = "1.0.2",
-    [string]$Runtime = "win-x64"
+    [string]$Runtime = "win-x64",
+    [string]$Platform = "x64"
 )
 
 $ErrorActionPreference = "Stop"
@@ -37,9 +38,12 @@ New-Item -ItemType Directory -Force -Path $PublishDir, $MsiDir, $SetupDir | Out-
 
 # --------------------------------------------------------------------------
 Write-Host "==> Publishing WinUI app (self-contained, unpackaged, $Runtime)..."
+# -p:Platform=x64 is required: a self-contained Windows App SDK app rejects the
+# default 'AnyCPU' platform that `dotnet publish` would otherwise use.
 dotnet publish $Project `
     -c $Configuration `
     -r $Runtime `
+    -p:Platform=$Platform `
     --self-contained true `
     -p:WindowsPackageType=None `
     -p:Version=$Version `
