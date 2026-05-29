@@ -18,6 +18,10 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <SelfContained>true</SelfContained>
 
+    <!-- Windows App SDK 1.5 references legacy win10-* / *-aot RIDs; .NET 8 dropped those
+         from its default RID model, so enable the full RID graph to resolve them (NETSDK1083). -->
+    <UseRidGraph>true</UseRidGraph>
+
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
