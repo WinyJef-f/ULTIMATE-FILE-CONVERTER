@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body { font: 13px -apple-system, "Helvetica Neue", sans-serif; color: #1d1d1f; padding: 22px 24px; line-height: 1.55; }
+h1 { font-size: 20px; margin: 0 0 12px; color: #0f766e; }
+h2 { font-size: 15px; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+code { background: #f5f5f7; padding: 1px 6px; border-radius: 4px; font: 12px "SF Mono", Menlo, monospace; }
+pre { background: #f5f5f7; padding: 10px 12px; border-radius: 6px; font: 12px "SF Mono", Menlo, monospace; }
+</style>
+</head>
+<body>
+<h1>After installing</h1>
+<p>Open <b>ULTIMATE-FILE-CONVERTER</b> from your Applications folder. Drag any file into the window, pick a target format, and click <b>Convert</b>.</p>
+
+<h2>If the automatic setup fails</h2>
+<p>Check the log first:</p>
+<pre>tail -f /tmp/ufc-install.log</pre>
+<p>To finish setup manually, install Homebrew from <a href="https://brew.sh">brew.sh</a>, then in Terminal run:</p>
+<pre>brew install ffmpeg imagemagick pandoc ghostscript p7zip librsvg
+brew install --cask libreoffice</pre>
+
+<h2>Removing</h2>
+<p>To uninstall, drag <b>ULTIMATE-FILE-CONVERTER</b> from Applications to the Trash. Homebrew tools that were installed will stay on your Mac and remain useful for other apps; remove them with <code>brew uninstall</code> if you don&rsquo;t want them.</p>
+
+<h2>Bundled tool licenses</h2>
+<p>ULTIMATE-FILE-CONVERTER does not redistribute the bundled tools &mdash; it invokes whichever versions Homebrew installed on your Mac. Each tool retains its own license (LGPL, GPL, BSD, MPL depending on the formula).</p>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+._*
+
+# Xcode (project is generated from project.yml via xcodegen)
+*.xcodeproj
+build/
+build-release/
+DerivedData/
+*.xcuserdata
+xcuserdata/
+*.xcuserstate
+*.moved-aside
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.resolved
+
+# Distribution artifacts (attached to GitHub Releases, not committed)
+dist/
+
+# Logs and temp
+*.log
+.installation_log
+
+# Editor backups
+*~
+*.swp

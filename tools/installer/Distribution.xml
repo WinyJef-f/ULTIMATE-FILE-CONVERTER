@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>ULTIMATE-FILE-CONVERTER</title>
+    <organization>com.jeffreyheiler.UltimateFileConverter</organization>
+    <domains enable_localSystem="true"/>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <license file="license.html" mime-type="text/html"/>
+    <readme file="readme.html" mime-type="text/html"/>
+    <options customize="never" require-scripts="true" rootVolumeOnly="true" allow-external-scripts="no"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.jeffreyheiler.UltimateFileConverter"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.jeffreyheiler.UltimateFileConverter" visible="false">
+        <pkg-ref id="com.jeffreyheiler.UltimateFileConverter"/>
+    </choice>
+    <pkg-ref id="com.jeffreyheiler.UltimateFileConverter" version="1.0.0" onConclusion="none">component.pkg</pkg-ref>
+</installer-gui-script>
