@@ -1,0 +1,48 @@
+name: Windows build
+
+# Builds the WinUI 3 app exactly the way the installer script publishes it
+# (self-contained, unpackaged, x64), so build/publish errors surface in CI
+# instead of only on a local Windows machine. The published app is uploaded
+# as an artifact you can download and run directly.
+
+on:
+  push:
+    branches:
+      - "claude/**"
+      - "main"
+  workflow_dispatch:
+
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish (Release, win-x64, self-contained, unpackaged)
+        run: >
+          dotnet publish Windows/UltimateFileConverter.WinUI/UltimateFileConverter.WinUI.csproj
+          -c Release
+          -r win-x64
+          -p:Platform=x64
+          --self-contained true
+          -p:WindowsPackageType=None
+          -o publish
+
+      - name: Upload published app
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ULTIMATE-FILE-CONVERTER-win-x64
+          path: publish
+          if-no-files-found: error
