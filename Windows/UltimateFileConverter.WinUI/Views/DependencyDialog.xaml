@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="UltimateFileConverter.WinUI.Views.DependencyDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:svc="using:UltimateFileConverter.WinUI.Services"
+    mc:Ignorable="d"
+    Title="Set up conversion tools"
+    CloseButtonText="Close"
+    DefaultButton="Close"
+    Closing="ContentDialog_Closing">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="540">
+        <StackPanel Width="460" Spacing="14">
+            <TextBlock TextWrapping="Wrap"
+                       Text="ULTIMATE-FILE-CONVERTER does all conversions locally using a few free, open-source tools. On Windows they're installed with winget. This is a one-time setup; Windows may ask for permission for each package." />
+
+            <InfoBar x:Name="WingetMissingBar" IsOpen="False" IsClosable="False" Severity="Error"
+                     Title="winget not found"
+                     Message="Install &quot;App Installer&quot; from the Microsoft Store to enable one-click setup, then reopen this dialog.">
+                <InfoBar.ActionButton>
+                    <Button Content="Open Microsoft Store" Click="OpenStore_Click" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <ItemsControl x:Name="ToolList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="svc:Dependency">
+                        <Grid Padding="0,5" ColumnSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" Glyph="&#xE74C;" FontSize="16" VerticalAlignment="Top" Margin="0,2,0,0"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <StackPanel Grid.Column="1" Spacing="1">
+                                <TextBlock Text="{x:Bind FriendlyName}" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind Purpose}" FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Button x:Name="InstallButton" Content="Install missing tools" Click="Install_Click"
+                        Style="{ThemeResource AccentButtonStyle}" />
+                <ProgressRing x:Name="InstallRing" IsActive="False" Width="20" Height="20" />
+                <TextBlock x:Name="InstallSummary" VerticalAlignment="Center"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+
+            <Border x:Name="LogContainer" Visibility="Collapsed"
+                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                    CornerRadius="8" Padding="10">
+                <ScrollViewer x:Name="LogScroller" MaxHeight="170" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="LogText" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                               FontFamily="Consolas" FontSize="12" />
+                </ScrollViewer>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

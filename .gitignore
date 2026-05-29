@@ -21,6 +21,14 @@ Package.resolved
 # Distribution artifacts (attached to GitHub Releases, not committed)
 dist/
 
+# Windows / .NET (WinUI 3 port build output)
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+Generated Files/
+
 # Logs and temp
 *.log
 .installation_log

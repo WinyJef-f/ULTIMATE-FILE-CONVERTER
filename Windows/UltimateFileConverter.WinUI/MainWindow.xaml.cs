@@ -1,50 +1,305 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using UltimateFileConverter.WinUI.Models;
+using UltimateFileConverter.WinUI.Services;
 using UltimateFileConverter.WinUI.ViewModels;
+using UltimateFileConverter.WinUI.Views;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace UltimateFileConverter.WinUI;
 
 public sealed partial class MainWindow : Window
 {
+    private readonly DependencyService _dependencyService = new();
+    private bool _checkedFirstRun;
+
     public MainViewModel ViewModel { get; } = new();
 
     public MainWindow()
     {
         InitializeComponent();
-        ExtendsContentIntoTitleBar = false;
-        _ = ViewModel.EnsureDependenciesAsync();
+        Title = "ULTIMATE-FILE-CONVERTER";
+        SetWindowIcon();
+
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        RebuildTargetMenu();
+
+        Activated += OnFirstActivated;
     }
 
-    private async void AddFiles_Click(object sender, RoutedEventArgs e)
+    private System.IntPtr WindowHandle => WinRT.Interop.WindowNative.GetWindowHandle(this);
+
+    private void SetWindowIcon()
     {
-        var picker = new FileOpenPicker
+        try
         {
-            SuggestedStartLocation = PickerLocationId.DocumentsLibrary
-        };
+            var id = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(WindowHandle);
+            var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(id);
+            var ico = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Assets", "app.ico");
+            if (System.IO.File.Exists(ico)) appWindow.SetIcon(ico);
+        }
+        catch
+        {
+            // Non-fatal if the icon can't be applied.
+        }
+    }
+
+    // MARK: - First-run dependency setup
+
+    private async void OnFirstActivated(object sender, WindowActivatedEventArgs args)
+    {
+        if (_checkedFirstRun || args.WindowActivationState == WindowActivationState.Deactivated) return;
+        _checkedFirstRun = true;
+        Activated -= OnFirstActivated;
+
+        if (!_dependencyService.ShouldOfferFirstRunSetup()) return;
+        try
+        {
+            var dialog = new DependencyDialog(_dependencyService) { XamlRoot = Content.XamlRoot };
+            await dialog.ShowAsync();
+        }
+        catch
+        {
+            // Setup is optional; ignore failures to present it.
+        }
+    }
+
+    // MARK: - Adding files
+
+    private async void AddFiles_Click(object sender, RoutedEventArgs e) => await AddFilesViaPickerAsync();
+
+    private async void DropZone_Tapped(object sender, TappedRoutedEventArgs e) => await AddFilesViaPickerAsync();
+
+    private async void AddFilesAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        await AddFilesViaPickerAsync();
+    }
+
+    private async void ConvertAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (ViewModel.CanConvert) await ViewModel.ConvertAsync();
+    }
+
+    private async System.Threading.Tasks.Task AddFilesViaPickerAsync()
+    {
+        var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
         picker.FileTypeFilter.Add("*");
-        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WindowHandle);
 
         var files = await picker.PickMultipleFilesAsync();
-        ViewModel.AddFiles(files.Select(file => file.Path));
+        if (files is { Count: > 0 })
+        {
+            ViewModel.AddFiles(files.Select(f => f.Path).Where(p => !string.IsNullOrEmpty(p)));
+        }
     }
-
-    private async void Convert_Click(object sender, RoutedEventArgs e) => await ViewModel.ConvertAsync();
-
-    private void Cancel_Click(object sender, RoutedEventArgs e) => ViewModel.Cancel();
 
     private void Root_DragOver(object sender, DragEventArgs e)
     {
-        e.AcceptedOperation = DataPackageOperation.Copy;
+        if (e.DataView.Contains(StandardDataFormats.StorageItems))
+        {
+            e.AcceptedOperation = DataPackageOperation.Copy;
+            if (e.DragUIOverride is not null)
+            {
+                e.DragUIOverride.Caption = "Add to queue";
+                e.DragUIOverride.IsCaptionVisible = true;
+                e.DragUIOverride.IsGlyphVisible = true;
+            }
+        }
+        else
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+        }
     }
 
     private async void Root_Drop(object sender, DragEventArgs e)
     {
         if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
-        var items = await e.DataView.GetStorageItemsAsync();
-        ViewModel.AddFiles(items.OfType<Windows.Storage.StorageFile>().Select(file => file.Path));
+        var deferral = e.GetDeferral();
+        try
+        {
+            var items = await e.DataView.GetStorageItemsAsync();
+            var paths = items.OfType<StorageFile>().Select(f => f.Path).Where(p => !string.IsNullOrEmpty(p)).ToList();
+            if (paths.Count > 0) ViewModel.AddFiles(paths);
+        }
+        finally
+        {
+            deferral.Complete();
+        }
+    }
+
+    // MARK: - Toolbar actions
+
+    private async void Convert_Click(object sender, RoutedEventArgs e) => await ViewModel.ConvertAsync();
+
+    private void Cancel_Click(object sender, RoutedEventArgs e) => ViewModel.CancelConversion();
+
+    private void ClearQueue_Click(object sender, RoutedEventArgs e) => ViewModel.ClearQueue();
+
+    private void ClearFinished_Click(object sender, RoutedEventArgs e) => ViewModel.ClearFinished();
+
+    private void ClearHistory_Click(object sender, RoutedEventArgs e) => ViewModel.ClearHistory();
+
+    private async void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SettingsDialog(ViewModel.Settings, WindowHandle) { XamlRoot = Content.XamlRoot };
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            ViewModel.ApplySettings(dialog.Result);
+        }
+    }
+
+    private async void Tools_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new DependencyDialog(_dependencyService) { XamlRoot = Content.XamlRoot };
+        await dialog.ShowAsync();
+    }
+
+    // MARK: - Per-row actions
+
+    private void QueueItemMore_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Tag is not QueueItem item) return;
+
+        var flyout = new MenuFlyout();
+
+        if (item.IsDone && !string.IsNullOrEmpty(item.OutputPath))
+        {
+            var reveal = new MenuFlyoutItem { Text = "Show in File Explorer" };
+            reveal.Click += (_, _) => RevealInExplorer(item.OutputPath!);
+            flyout.Items.Add(reveal);
+
+            var open = new MenuFlyoutItem { Text = "Open" };
+            open.Click += (_, _) => OpenPath(item.OutputPath!);
+            flyout.Items.Add(open);
+
+            flyout.Items.Add(new MenuFlyoutSeparator());
+        }
+
+        if (item.IsFailed && !string.IsNullOrEmpty(item.ErrorMessage))
+        {
+            var copy = new MenuFlyoutItem { Text = "Copy error message" };
+            copy.Click += (_, _) => CopyText(item.ErrorMessage!);
+            flyout.Items.Add(copy);
+
+            flyout.Items.Add(new MenuFlyoutSeparator());
+        }
+
+        var remove = new MenuFlyoutItem { Text = "Remove from queue" };
+        remove.Click += (_, _) => ViewModel.Remove(item);
+        flyout.Items.Add(remove);
+
+        flyout.ShowAt(button);
+    }
+
+    private void HistoryReveal_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is HistoryEntry entry && !string.IsNullOrEmpty(entry.OutputPath))
+        {
+            RevealInExplorer(entry.OutputPath!);
+        }
+    }
+
+    // MARK: - Target picker menu
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(MainViewModel.ValidTargetGroups)
+            or nameof(MainViewModel.TargetFormat)
+            or nameof(MainViewModel.ValidTargets))
+        {
+            RebuildTargetMenu();
+        }
+    }
+
+    private void RebuildTargetMenu()
+    {
+        var groups = ViewModel.ValidTargetGroups;
+        if (groups.Count == 0)
+        {
+            TargetPickerButton.Flyout = null;
+            return;
+        }
+
+        var flyout = new MenuFlyout();
+        var first = true;
+        foreach (var group in groups)
+        {
+            if (!first) flyout.Items.Add(new MenuFlyoutSeparator());
+            first = false;
+
+            flyout.Items.Add(new MenuFlyoutItem { Text = group.Header, IsEnabled = false });
+            foreach (var kind in group.Items)
+            {
+                var captured = kind;
+                var item = new ToggleMenuFlyoutItem
+                {
+                    Text = kind.DisplayName(),
+                    IsChecked = ViewModel.TargetFormat == kind,
+                };
+                item.Click += (_, _) => ViewModel.TargetFormat = captured;
+                flyout.Items.Add(item);
+            }
+        }
+        TargetPickerButton.Flyout = flyout;
+    }
+
+    // MARK: - Shell helpers
+
+    private static void RevealInExplorer(string path)
+    {
+        try
+        {
+            if (System.IO.File.Exists(path))
+            {
+                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+            }
+            else
+            {
+                var dir = System.IO.Path.GetDirectoryName(path);
+                if (dir is not null && System.IO.Directory.Exists(dir))
+                {
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"\"{dir}\"") { UseShellExecute = true });
+                }
+            }
+        }
+        catch
+        {
+            // Ignore shell failures.
+        }
+    }
+
+    private static void OpenPath(string path)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+        }
+        catch
+        {
+            // Ignore shell failures.
+        }
+    }
+
+    private static void CopyText(string text)
+    {
+        try
+        {
+            var package = new DataPackage();
+            package.SetText(text);
+            Clipboard.SetContent(package);
+        }
+        catch
+        {
+            // Ignore clipboard failures.
+        }
     }
 }

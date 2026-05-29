@@ -15,4 +15,7 @@ Global
 		{0F3F6076-31CF-4E6E-A998-2E5BB81D250F}.Release|x64.ActiveCfg = Release|x64
 		{0F3F6076-31CF-4E6E-A998-2E5BB81D250F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
 EndGlobal

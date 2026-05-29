@@ -1,5 +1,6 @@
 namespace UltimateFileConverter.WinUI.Models;
 
+/// <summary>Broad family a <see cref="FileKind"/> belongs to. Mirrors the macOS FileCategory.</summary>
 public enum FileCategory
 {
     Image,
@@ -7,65 +8,179 @@ public enum FileCategory
     Video,
     Document,
     Spreadsheet,
-    Presentation
+    Presentation,
 }
 
-public sealed record FileKind(string Id, string DisplayName, FileCategory Category, string CanonicalExtension, IReadOnlyList<string> Extensions)
+/// <summary>
+/// Every concrete format the app understands. The raw name (lower-cased enum name)
+/// is the stable identifier used in persisted history and in conversion-plan arguments,
+/// exactly like the macOS <c>FileKind</c> rawValue.
+/// </summary>
+public enum FileKind
 {
-    public static readonly FileKind Jpeg = new("jpeg", "JPEG", FileCategory.Image, "jpg", ["jpg", "jpeg", "jpe", "jfif"]);
-    public static readonly FileKind Png = new("png", "PNG", FileCategory.Image, "png", ["png"]);
-    public static readonly FileKind Webp = new("webp", "WebP", FileCategory.Image, "webp", ["webp"]);
-    public static readonly FileKind Heic = new("heic", "HEIC", FileCategory.Image, "heic", ["heic", "heif"]);
-    public static readonly FileKind Avif = new("avif", "AVIF", FileCategory.Image, "avif", ["avif"]);
-    public static readonly FileKind Gif = new("gif", "GIF", FileCategory.Image, "gif", ["gif"]);
-    public static readonly FileKind Bmp = new("bmp", "BMP", FileCategory.Image, "bmp", ["bmp"]);
-    public static readonly FileKind Tiff = new("tiff", "TIFF", FileCategory.Image, "tif", ["tif", "tiff"]);
-    public static readonly FileKind Svg = new("svg", "SVG", FileCategory.Image, "svg", ["svg"]);
-    public static readonly FileKind Ico = new("ico", "ICO", FileCategory.Image, "ico", ["ico"]);
-    public static readonly FileKind Mp3 = new("mp3", "MP3", FileCategory.Audio, "mp3", ["mp3"]);
-    public static readonly FileKind Wav = new("wav", "WAV", FileCategory.Audio, "wav", ["wav", "wave"]);
-    public static readonly FileKind Flac = new("flac", "FLAC", FileCategory.Audio, "flac", ["flac"]);
-    public static readonly FileKind Aac = new("aac", "AAC", FileCategory.Audio, "aac", ["aac"]);
-    public static readonly FileKind M4a = new("m4a", "M4A", FileCategory.Audio, "m4a", ["m4a"]);
-    public static readonly FileKind Ogg = new("ogg", "OGG", FileCategory.Audio, "ogg", ["ogg", "oga"]);
-    public static readonly FileKind Opus = new("opus", "Opus", FileCategory.Audio, "opus", ["opus"]);
-    public static readonly FileKind Aiff = new("aiff", "AIFF", FileCategory.Audio, "aiff", ["aiff", "aif", "aifc"]);
-    public static readonly FileKind Mp4 = new("mp4", "MP4", FileCategory.Video, "mp4", ["mp4", "m4v"]);
-    public static readonly FileKind Mov = new("mov", "MOV", FileCategory.Video, "mov", ["mov"]);
-    public static readonly FileKind Mkv = new("mkv", "MKV", FileCategory.Video, "mkv", ["mkv"]);
-    public static readonly FileKind Webm = new("webm", "WebM", FileCategory.Video, "webm", ["webm"]);
-    public static readonly FileKind Avi = new("avi", "AVI", FileCategory.Video, "avi", ["avi"]);
-    public static readonly FileKind Pdf = new("pdf", "PDF", FileCategory.Document, "pdf", ["pdf"]);
-    public static readonly FileKind Docx = new("docx", "Word (.docx)", FileCategory.Document, "docx", ["docx"]);
-    public static readonly FileKind Doc = new("doc", "Word (.doc)", FileCategory.Document, "doc", ["doc"]);
-    public static readonly FileKind Odt = new("odt", "OpenDocument Text", FileCategory.Document, "odt", ["odt"]);
-    public static readonly FileKind Rtf = new("rtf", "Rich Text", FileCategory.Document, "rtf", ["rtf"]);
-    public static readonly FileKind Html = new("html", "HTML", FileCategory.Document, "html", ["html", "htm"]);
-    public static readonly FileKind Md = new("md", "Markdown", FileCategory.Document, "md", ["md", "markdown", "mdown"]);
-    public static readonly FileKind Epub = new("epub", "EPUB", FileCategory.Document, "epub", ["epub"]);
-    public static readonly FileKind Txt = new("txt", "Plain Text", FileCategory.Document, "txt", ["txt", "text"]);
-    public static readonly FileKind Tex = new("tex", "LaTeX", FileCategory.Document, "tex", ["tex", "latex"]);
-    public static readonly FileKind Xlsx = new("xlsx", "Excel (.xlsx)", FileCategory.Spreadsheet, "xlsx", ["xlsx"]);
-    public static readonly FileKind Ods = new("ods", "OpenDocument Sheet", FileCategory.Spreadsheet, "ods", ["ods"]);
-    public static readonly FileKind Csv = new("csv", "CSV", FileCategory.Spreadsheet, "csv", ["csv"]);
-    public static readonly FileKind Pptx = new("pptx", "PowerPoint (.pptx)", FileCategory.Presentation, "pptx", ["pptx"]);
-    public static readonly FileKind Odp = new("odp", "OpenDocument Pres.", FileCategory.Presentation, "odp", ["odp"]);
+    // Image
+    Jpeg, Png, Webp, Heic, Avif, Gif, Bmp, Tiff, Svg, Ico,
+    // Audio
+    Mp3, Wav, Flac, Aac, M4a, Ogg, Opus, Aiff,
+    // Video
+    Mp4, Mov, Mkv, Webm, Avi,
+    // Document
+    Pdf, Docx, Doc, Odt, Rtf, Html, Md, Epub, Txt, Tex,
+    // Spreadsheet
+    Xlsx, Ods, Csv,
+    // Presentation
+    Pptx, Odp,
+}
 
-    public static IReadOnlyList<FileKind> All { get; } =
-    [
-        Jpeg, Png, Webp, Heic, Avif, Gif, Bmp, Tiff, Svg, Ico,
-        Mp3, Wav, Flac, Aac, M4a, Ogg, Opus, Aiff,
-        Mp4, Mov, Mkv, Webm, Avi,
-        Pdf, Docx, Doc, Odt, Rtf, Html, Md, Epub, Txt, Tex,
-        Xlsx, Ods, Csv,
-        Pptx, Odp
-    ];
+/// <summary>
+/// Metadata and helpers for <see cref="FileKind"/> / <see cref="FileCategory"/>.
+/// The category mapping, display names, recognized extensions, and canonical
+/// extension are a 1:1 port of the macOS model so both platforms agree on routing.
+/// </summary>
+public static class Formats
+{
+    public static readonly IReadOnlyList<FileKind> All = (FileKind[])System.Enum.GetValues(typeof(FileKind));
 
-    public static FileKind? FromPath(string path)
+    public static readonly IReadOnlyList<FileCategory> AllCategories =
+        (FileCategory[])System.Enum.GetValues(typeof(FileCategory));
+
+    public static FileCategory Category(this FileKind kind) => kind switch
     {
-        var ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
-        return All.FirstOrDefault(kind => kind.Extensions.Contains(ext));
+        FileKind.Jpeg or FileKind.Png or FileKind.Webp or FileKind.Heic or FileKind.Avif
+            or FileKind.Gif or FileKind.Bmp or FileKind.Tiff or FileKind.Svg or FileKind.Ico => FileCategory.Image,
+        FileKind.Mp3 or FileKind.Wav or FileKind.Flac or FileKind.Aac or FileKind.M4a
+            or FileKind.Ogg or FileKind.Opus or FileKind.Aiff => FileCategory.Audio,
+        FileKind.Mp4 or FileKind.Mov or FileKind.Mkv or FileKind.Webm or FileKind.Avi => FileCategory.Video,
+        FileKind.Pdf or FileKind.Docx or FileKind.Doc or FileKind.Odt or FileKind.Rtf
+            or FileKind.Html or FileKind.Md or FileKind.Epub or FileKind.Txt or FileKind.Tex => FileCategory.Document,
+        FileKind.Xlsx or FileKind.Ods or FileKind.Csv => FileCategory.Spreadsheet,
+        FileKind.Pptx or FileKind.Odp => FileCategory.Presentation,
+        _ => FileCategory.Document,
+    };
+
+    public static string DisplayName(this FileKind kind) => kind switch
+    {
+        FileKind.Jpeg => "JPEG",
+        FileKind.Png => "PNG",
+        FileKind.Webp => "WebP",
+        FileKind.Heic => "HEIC",
+        FileKind.Gif => "GIF",
+        FileKind.Bmp => "BMP",
+        FileKind.Tiff => "TIFF",
+        FileKind.Avif => "AVIF",
+        FileKind.Svg => "SVG",
+        FileKind.Ico => "ICO",
+        FileKind.Mp3 => "MP3",
+        FileKind.Wav => "WAV",
+        FileKind.Flac => "FLAC",
+        FileKind.Aac => "AAC",
+        FileKind.M4a => "M4A",
+        FileKind.Ogg => "OGG",
+        FileKind.Opus => "Opus",
+        FileKind.Aiff => "AIFF",
+        FileKind.Mp4 => "MP4",
+        FileKind.Mov => "MOV",
+        FileKind.Mkv => "MKV",
+        FileKind.Webm => "WebM",
+        FileKind.Avi => "AVI",
+        FileKind.Pdf => "PDF",
+        FileKind.Docx => "Word (.docx)",
+        FileKind.Doc => "Word (.doc)",
+        FileKind.Odt => "OpenDocument Text",
+        FileKind.Rtf => "Rich Text",
+        FileKind.Html => "HTML",
+        FileKind.Md => "Markdown",
+        FileKind.Epub => "EPUB",
+        FileKind.Txt => "Plain Text",
+        FileKind.Tex => "LaTeX",
+        FileKind.Xlsx => "Excel (.xlsx)",
+        FileKind.Ods => "OpenDocument Sheet",
+        FileKind.Csv => "CSV",
+        FileKind.Pptx => "PowerPoint (.pptx)",
+        FileKind.Odp => "OpenDocument Pres.",
+        _ => kind.ToString().ToUpperInvariant(),
+    };
+
+    /// <summary>Every file extension (lower-cased, no dot) that maps to this kind.</summary>
+    public static IReadOnlyList<string> RecognizedExtensions(this FileKind kind) => kind switch
+    {
+        FileKind.Jpeg => new[] { "jpg", "jpeg", "jpe", "jfif" },
+        FileKind.Png => new[] { "png" },
+        FileKind.Webp => new[] { "webp" },
+        FileKind.Heic => new[] { "heic", "heif" },
+        FileKind.Gif => new[] { "gif" },
+        FileKind.Bmp => new[] { "bmp" },
+        FileKind.Tiff => new[] { "tif", "tiff" },
+        FileKind.Avif => new[] { "avif" },
+        FileKind.Svg => new[] { "svg" },
+        FileKind.Ico => new[] { "ico" },
+        FileKind.Mp3 => new[] { "mp3" },
+        FileKind.Wav => new[] { "wav", "wave" },
+        FileKind.Flac => new[] { "flac" },
+        FileKind.Aac => new[] { "aac" },
+        FileKind.M4a => new[] { "m4a" },
+        FileKind.Ogg => new[] { "ogg", "oga" },
+        FileKind.Opus => new[] { "opus" },
+        FileKind.Aiff => new[] { "aiff", "aif", "aifc" },
+        FileKind.Mp4 => new[] { "mp4", "m4v" },
+        FileKind.Mov => new[] { "mov" },
+        FileKind.Mkv => new[] { "mkv" },
+        FileKind.Webm => new[] { "webm" },
+        FileKind.Avi => new[] { "avi" },
+        FileKind.Pdf => new[] { "pdf" },
+        FileKind.Docx => new[] { "docx" },
+        FileKind.Doc => new[] { "doc" },
+        FileKind.Odt => new[] { "odt" },
+        FileKind.Rtf => new[] { "rtf" },
+        FileKind.Html => new[] { "html", "htm" },
+        FileKind.Md => new[] { "md", "markdown", "mdown" },
+        FileKind.Epub => new[] { "epub" },
+        FileKind.Txt => new[] { "txt", "text" },
+        FileKind.Tex => new[] { "tex", "latex" },
+        FileKind.Xlsx => new[] { "xlsx" },
+        FileKind.Ods => new[] { "ods" },
+        FileKind.Csv => new[] { "csv" },
+        FileKind.Pptx => new[] { "pptx" },
+        FileKind.Odp => new[] { "odp" },
+        _ => new[] { kind.ToString().ToLowerInvariant() },
+    };
+
+    /// <summary>Extension used when writing an output file.</summary>
+    public static string CanonicalExtension(this FileKind kind) => kind.RecognizedExtensions()[0];
+
+    /// <summary>Stable lower-case identifier (matches the macOS rawValue) used in plans and history.</summary>
+    public static string RawValue(this FileKind kind) => kind.ToString().ToLowerInvariant();
+
+    public static FileKind? FromRawValue(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw)) return null;
+        foreach (var k in All)
+        {
+            if (k.RawValue() == raw) return k;
+        }
+        return null;
     }
 
-    public override string ToString() => DisplayName;
+    public static string DisplayName(this FileCategory category) => category switch
+    {
+        FileCategory.Image => "Image",
+        FileCategory.Audio => "Audio",
+        FileCategory.Video => "Video",
+        FileCategory.Document => "Document",
+        FileCategory.Spreadsheet => "Spreadsheet",
+        FileCategory.Presentation => "Presentation",
+        _ => category.ToString(),
+    };
+
+    /// <summary>Segoe Fluent / MDL2 glyph code used as the per-category badge.</summary>
+    public static string Glyph(this FileCategory category) => category switch
+    {
+        FileCategory.Image => "\uE91B",        // Photo
+        FileCategory.Audio => "\uEC4F",        // MusicNote
+        FileCategory.Video => "\uE714",        // Video
+        FileCategory.Document => "\uE8A5",     // Document
+        FileCategory.Spreadsheet => "\uE8A5",  // Document (shared)
+        FileCategory.Presentation => "\uE786", // Slideshow
+        _ => "\uE8A5",
+    };
 }
