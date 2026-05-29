@@ -37,18 +37,42 @@ if (Test-Path $PublishDir) { Remove-Item $PublishDir -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $PublishDir, $MsiDir, $SetupDir | Out-Null
 
 # --------------------------------------------------------------------------
+# Build with MSBuild from Visual Studio, not `dotnet`: WinUI 3 needs the
+# resources.pri / AppxPackage build tasks (Microsoft.Build.Packaging.Pri.Tasks.dll)
+# that ship with VS's MSBuild and aren't present in the bare .NET SDK.
+function Find-MSBuild {
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vswhere) {
+        $found = & $vswhere -latest -prerelease -products * `
+            -requires Microsoft.Component.MSBuild `
+            -find "MSBuild\**\Bin\MSBuild.exe" 2>$null | Select-Object -First 1
+        if ($found -and (Test-Path $found)) { return $found }
+    }
+    $cmd = Get-Command MSBuild.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    return $null
+}
+
+$MSBuild = Find-MSBuild
+if (-not $MSBuild) {
+    throw "MSBuild was not found. Install Visual Studio 2022 with the '.NET Desktop' and 'Windows App SDK / WinUI' components."
+}
+
+Write-Host "==> Restoring ($MSBuild)..."
+& $MSBuild $Project /t:Restore /p:Configuration=$Configuration /p:Platform=$Platform /p:RuntimeIdentifier=$Runtime
+if ($LASTEXITCODE -ne 0) { throw "Restore failed." }
+
 Write-Host "==> Publishing WinUI app (self-contained, unpackaged, $Runtime)..."
-# -p:Platform=x64 is required: a self-contained Windows App SDK app rejects the
-# default 'AnyCPU' platform that `dotnet publish` would otherwise use.
-dotnet publish $Project `
-    -c $Configuration `
-    -r $Runtime `
-    -p:Platform=$Platform `
-    --self-contained true `
-    -p:WindowsPackageType=None `
-    -p:Version=$Version `
-    -o $PublishDir
-if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
+# Forward slash on PublishDir avoids the trailing-backslash-inside-quotes arg-escaping bug.
+& $MSBuild $Project /t:Publish `
+    /p:Configuration=$Configuration `
+    /p:Platform=$Platform `
+    /p:RuntimeIdentifier=$Runtime `
+    /p:SelfContained=true `
+    /p:WindowsPackageType=None `
+    /p:Version=$Version `
+    "/p:PublishDir=$PublishDir/"
+if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
 
 $AppExe = Join-Path $PublishDir "UltimateFileConverter.WinUI.exe"
 if (-not (Test-Path $AppExe)) { throw "Publish did not produce $AppExe" }

@@ -83,7 +83,7 @@ open ULTIMATE-FILE-CONVERTER.xcodeproj
 
 ### Windows build
 
-Requires Windows 10 2004+ or Windows 11, the **.NET 8 SDK**, and Visual Studio 2022 with the **Windows App SDK / WinUI** workload (for `F5` debugging). The build script installs the **WiX** toolset automatically as a .NET tool; **Inno Setup 6** is optional and only needed for the `.exe` installer.
+Requires Windows 10 2004+ or Windows 11, the **.NET 8 SDK**, and **Visual Studio 2022** with the **.NET Desktop** and **Windows App SDK / WinUI** components. The build script publishes with Visual Studio's MSBuild (which provides WinUI's `resources.pri` tooling that the bare `dotnet` CLI lacks). It installs the **WiX** toolset automatically as a .NET tool; **Inno Setup 6** is optional and only needed for the `.exe` installer.
 
 ```powershell
 git clone https://github.com/WinyJef-f/ULTIMATE-FILE-CONVERTER.git

@@ -1,10 +1,10 @@
 name: Windows build
 
-# Builds the WinUI 3 app exactly the way the installer script publishes it
-# (self-contained, unpackaged, x64), so build/publish errors surface in CI
-# instead of only on a local Windows machine. On success the published app is
-# uploaded as an artifact; on failure the build errors are posted to the PR
-# (as a single rolling comment) and the full log is uploaded as an artifact.
+# Builds the WinUI 3 app with MSBuild from Visual Studio (which provides the
+# resources.pri / AppxPackage build tasks that the bare dotnet CLI lacks),
+# publishing self-contained + unpackaged for win-x64. On success the published
+# app is uploaded as an artifact; on failure the errors are posted to the PR as
+# a single rolling comment and the full log is uploaded.
 
 on:
   push:
@@ -34,12 +34,22 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Publish (Release, win-x64, self-contained, unpackaged)
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build & publish (MSBuild, Release, win-x64, self-contained, unpackaged)
         shell: pwsh
         run: |
-          dotnet publish Windows/UltimateFileConverter.WinUI/UltimateFileConverter.WinUI.csproj `
-            -c Release -r win-x64 -p:Platform=x64 --self-contained true -p:WindowsPackageType=None `
-            -o publish *>&1 | Tee-Object -FilePath build.log
+          $proj = "$env:GITHUB_WORKSPACE\Windows\UltimateFileConverter.WinUI\UltimateFileConverter.WinUI.csproj"
+          $pub  = "$env:GITHUB_WORKSPACE\publish"
+
+          msbuild $proj /t:Restore /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64 `
+            *>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          msbuild $proj /t:Publish /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64 `
+            /p:SelfContained=true /p:WindowsPackageType=None "/p:PublishDir=$pub/" `
+            *>&1 | Tee-Object -FilePath build.log -Append
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Upload build log
