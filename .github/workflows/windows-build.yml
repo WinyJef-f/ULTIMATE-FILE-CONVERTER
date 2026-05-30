@@ -65,7 +65,9 @@ jobs:
           # Bootstrap.dll must be in the root (loaded by the OS before any path is set up).
           # The other DLLs may land directly in the root or inside a Frameworks\ subdirectory
           # depending on WASDK version, so search recursively for those.
-          $rootNeeds = @("UltimateFileConverter.WinUI.exe", "Microsoft.WindowsAppRuntime.Bootstrap.dll")
+          # resources.pri holds the compiled XAML (XBF); without it the app can start but
+          # XamlParseException 0x802B000A fires on the first LoadComponent call.
+          $rootNeeds = @("UltimateFileConverter.WinUI.exe", "Microsoft.WindowsAppRuntime.Bootstrap.dll", "resources.pri")
           $anywhereNeeds = @("Microsoft.ui.xaml.dll", "coreclr.dll")
 
           $missing = @(

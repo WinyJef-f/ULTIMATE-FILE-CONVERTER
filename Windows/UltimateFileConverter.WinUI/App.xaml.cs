@@ -44,6 +44,7 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        LogStartupEnvironment();
         try
         {
             _window = new MainWindow();
@@ -54,6 +55,20 @@ public partial class App : Application
             ReportFatal("OnLaunched", ex);
             throw;
         }
+    }
+
+    private static void LogStartupEnvironment()
+    {
+        try
+        {
+            var base_ = System.AppContext.BaseDirectory;
+            var pri = System.IO.Path.Combine(base_, "resources.pri");
+            var priInfo = System.IO.File.Exists(pri)
+                ? $"EXISTS ({new System.IO.FileInfo(pri).Length:N0} bytes)"
+                : "MISSING";
+            AppendLog("Startup", $"BaseDirectory: {base_}\nresources.pri: {priInfo}\nOS: {System.Environment.OSVersion}");
+        }
+        catch { }
     }
 
     /// <summary>

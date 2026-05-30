@@ -1,15 +1,25 @@
 using Microsoft.UI.Xaml;
+using UltimateFileConverter.WinUI.Views;
 
 namespace UltimateFileConverter.WinUI;
 
 public sealed partial class MainWindow : Window
 {
+    // MainView is created programmatically rather than via <views:MainView> in XAML.
+    // Relying on the WinUI 3 XAML parser to activate a UserControl from a custom sub-namespace
+    // requires the CsWinRT activation factory to be registered before LoadComponent runs;
+    // creating it in C# bypasses that activation path entirely.
+    private readonly MainView _rootView;
+
     public MainWindow()
     {
         InitializeComponent();
         Title = "ULTIMATE-FILE-CONVERTER";
         SetWindowIcon();
-        RootView.Initialize(WinRT.Interop.WindowNative.GetWindowHandle(this));
+
+        _rootView = new MainView();
+        Content = _rootView;
+        _rootView.Initialize(WinRT.Interop.WindowNative.GetWindowHandle(this));
     }
 
     private void SetWindowIcon()
