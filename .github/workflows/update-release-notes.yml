@@ -1,7 +1,7 @@
 name: Update v1.0.2 release notes
 
-# Patches the body of the existing v1.0.2 GitHub release from
-# tools/release-notes-v1.0.2.md without touching the tag, title, or assets.
+# Patches the title and body of the existing v1.0.2 GitHub release from
+# tools/release-notes-v1.0.2.md without touching the tag or assets.
 # Runs only when a push to main carries "[update-release]" in its commit message.
 
 on:
@@ -20,8 +20,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Patch v1.0.2 release body
+      - name: Patch v1.0.2 release title and body
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release edit "v1.0.2" --notes-file tools/release-notes-v1.0.2.md
+        run: gh release edit "v1.0.2" --title "v1.0.2 — fixed Experimental mode formatting in installer" --notes-file tools/release-notes-v1.0.2.md

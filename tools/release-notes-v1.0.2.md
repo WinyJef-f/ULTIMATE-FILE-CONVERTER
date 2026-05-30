@@ -1,6 +1,6 @@
 ## What changed
 
-- **Removed Experimental mode disclosure from the installer license screen.** The section was rendering with improper formatting in the macOS installer; it has been removed entirely.
+- **Fixed Experimental mode formatting in the installer license screen.** The section was rendering with a styled disclaimer box (cream background, orange border) that clashed with the rest of the license page; it now uses plain text matching the other sections.
 
 ## Install — macOS
 
