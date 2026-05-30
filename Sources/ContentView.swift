@@ -4,6 +4,7 @@ import AppKit
 struct ContentView: View {
     @EnvironmentObject var vm: AppViewModel
     @Binding var showSettings: Bool
+    @State private var showDashboard = false
 
     var body: some View {
         Group {
@@ -17,6 +18,9 @@ struct ContentView: View {
         .toolbar { toolbarContent }
         .sheet(isPresented: $showSettings) {
             SettingsSheet(settings: $vm.settings)
+        }
+        .sheet(isPresented: $showDashboard) {
+            DashboardSheet(stats: vm.stats)
         }
     }
 
@@ -162,6 +166,15 @@ struct ContentView: View {
             }
             .help("Remove all files from the queue")
             .disabled(vm.queue.isEmpty || vm.isConverting)
+        }
+
+        ToolbarItem(placement: .automatic) {
+            Button {
+                showDashboard = true
+            } label: {
+                Label("Stats", systemImage: "chart.bar")
+            }
+            .help("Conversion stats")
         }
 
         ToolbarItem(placement: .automatic) {

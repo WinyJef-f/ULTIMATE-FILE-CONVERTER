@@ -28,13 +28,17 @@ public sealed class HistoryEntry
 
     public string? ErrorMessage { get; set; }
 
+    /// <summary>Source file size in bytes captured at conversion time. 0 for entries predating this field.</summary>
+    public long BytesProcessed { get; set; } = 0;
+
     public static HistoryEntry Create(
         string sourcePath,
         FileKind sourceKind,
         string? outputPath,
         FileKind outputKind,
         bool success,
-        string? errorMessage)
+        string? errorMessage,
+        long bytesProcessed = 0)
     {
         return new HistoryEntry
         {
@@ -46,6 +50,7 @@ public sealed class HistoryEntry
             OutputKind = outputKind.RawValue(),
             Outcome = success ? "success" : "failure",
             ErrorMessage = success ? null : errorMessage,
+            BytesProcessed = bytesProcessed,
         };
     }
 

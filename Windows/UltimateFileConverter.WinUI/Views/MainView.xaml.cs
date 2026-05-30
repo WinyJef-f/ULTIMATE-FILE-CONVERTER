@@ -141,6 +141,12 @@ public sealed partial class MainView : UserControl
         }
     }
 
+    private async void Stats_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new StatsDialog(ViewModel.Stats) { XamlRoot = XamlRoot };
+        await dialog.ShowAsync();
+    }
+
     private async void Tools_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new DependencyDialog(_dependencyService) { XamlRoot = XamlRoot };

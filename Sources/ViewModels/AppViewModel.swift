@@ -221,16 +221,20 @@ final class AppViewModel: ObservableObject {
                 queue[idx].status = .failed(message: message ?? "Unknown error")
             }
         }
+        let bytes = ((try? FileManager.default.attributesOfItem(atPath: item.url.path)) ?? [:])[FileAttributeKey.size] as? Int ?? 0
         let entry = HistoryEntry(
             sourceURL: item.url,
             sourceKind: item.sourceKind,
             outputURL: success ? output : nil,
             outputKind: item.targetKind,
             outcome: success ? .success : .failure,
-            errorMessage: success ? nil : message
+            errorMessage: success ? nil : message,
+            bytesProcessed: bytes
         )
         addHistoryEntry(entry)
     }
+
+    var stats: ConversionStats { ConversionStats.compute(from: history) }
 
     private func computeOutputURL(for item: QueueItem) -> URL {
         let outputDir: URL

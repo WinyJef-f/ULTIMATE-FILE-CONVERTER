@@ -339,10 +339,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
         item.ErrorMessage = success ? null : message;
         item.Status = success ? QueueItemStatus.Done : QueueItemStatus.Failed;
 
+        long bytes = 0;
+        try { bytes = new System.IO.FileInfo(item.Path).Length; } catch { }
+
         AddHistoryEntry(HistoryEntry.Create(
-            item.Path, item.SourceKind, success ? output : null, item.TargetKind, success, success ? null : message));
+            item.Path, item.SourceKind, success ? output : null, item.TargetKind, success, success ? null : message, bytes));
         RaiseQueueDerived();
     }
+
+    public ConversionStats Stats => ConversionStats.Compute(History);
 
     private string ComputeOutputPath(QueueItem item)
     {

@@ -53,6 +53,9 @@
                         ToolTipService.ToolTip="Remove all files from the queue">
                     <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE74D;" FontSize="15" />
                 </Button>
+                <Button Click="Stats_Click" ToolTipService.ToolTip="Conversion stats">
+                    <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE9D9;" FontSize="15" />
+                </Button>
                 <Button Click="Tools_Click" ToolTipService.ToolTip="Set up conversion tools (winget)">
                     <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE90F;" FontSize="15" />
                 </Button>
