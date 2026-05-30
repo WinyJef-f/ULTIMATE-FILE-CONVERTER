@@ -1,0 +1,27 @@
+name: Update v1.0.1 release notes
+
+# Patches the body of the existing v1.0.1 GitHub release from
+# tools/release-notes-v1.0.1.md without touching the tag, title, or assets.
+# Runs only when a push to main carries "[update-release]" in its commit message.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  patch-notes:
+    if: contains(github.event.head_commit.message, '[update-release]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch v1.0.1 release body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "v1.0.1" --notes-file tools/release-notes-v1.0.1.md
