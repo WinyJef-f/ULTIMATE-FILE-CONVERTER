@@ -6,13 +6,17 @@ name: Release v1.0.1
 #   - Windows: ULTIMATE-FILE-CONVERTER-1.0.1-x64.msi  +  ...-Setup-1.0.1-x64.exe
 #
 # Assets are uploaded with `gh release upload --clobber`, which adds/replaces files on the
-# release WITHOUT modifying its tag, title, or notes. Trigger by pushing a `release-*` tag
-# (so the build uses that commit's code) or via the Actions "Run workflow" button.
+# release WITHOUT modifying its tag, title, or notes.
+#
+# Runs only when a push to a claude/** branch carries "[release]" in its commit message
+# (so ordinary commits don't rebuild/re-upload the release), or via the Actions
+# "Run workflow" button.
 
 on:
   push:
-    tags:
-      - "release-*"
+    branches:
+      - "claude/**"
+      - "main"
   workflow_dispatch:
 
 permissions:
@@ -25,6 +29,9 @@ env:
 jobs:
   # ---------------------------------------------------------------------------
   windows:
+    # Only build/publish on an explicit release push (commit message contains "[release]")
+    # or a manual dispatch. The `publish` job needs this, so it skips too when this skips.
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -57,6 +64,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   macos:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     runs-on: macos-14
     steps:
       - name: Checkout
