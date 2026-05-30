@@ -73,7 +73,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installers
-          path: dist/windows/setup/*.exe
+          path: |
+            dist/windows/msi/*.msi
+            dist/windows/setup/*.exe
           if-no-files-found: error
 
       - name: Upload Windows build log
@@ -170,5 +172,6 @@ jobs:
           # without touching the release tag, title, or body.
           gh release upload "$RELEASE_TAG" \
             artifacts/macos/*.dmg \
-            artifacts/windows/*.exe \
+            artifacts/windows/msi/*.msi \
+            artifacts/windows/setup/*.exe \
             --clobber
