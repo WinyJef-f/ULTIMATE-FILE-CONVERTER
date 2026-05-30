@@ -1,9 +1,9 @@
-name: Release v1.0.1
+name: Release v1.0.2
 
 # Builds the shipping artifacts on their native runners and attaches them to the
-# existing v1.0.1 GitHub release:
-#   - macOS:   ULTIMATE-FILE-CONVERTER-1.0.1.dmg  (rebuilt; replaces the existing asset)
-#   - Windows: ULTIMATE-FILE-CONVERTER-Setup-1.0.1-x64.exe
+# existing v1.0.2 GitHub release:
+#   - macOS:   ULTIMATE-FILE-CONVERTER-1.0.2.dmg  (rebuilt; replaces the existing asset)
+#   - Windows: ULTIMATE-FILE-CONVERTER-Setup-1.0.2-x64.exe
 #
 # Assets are uploaded with `gh release upload --clobber`, which adds/replaces files on the
 # release WITHOUT modifying its tag, title, or notes.
@@ -25,8 +25,8 @@ permissions:
   pull-requests: write
 
 env:
-  UFC_VERSION: "1.0.1"
-  RELEASE_TAG: "v1.0.1"
+  UFC_VERSION: "1.0.2"
+  RELEASE_TAG: "v1.0.2"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -146,6 +146,9 @@ jobs:
     needs: [windows, macos]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download Windows installers
         uses: actions/download-artifact@v4
         with:
@@ -161,13 +164,18 @@ jobs:
       - name: List downloaded artifacts
         run: find artifacts -type f -printf '%p  (%s bytes)\n'
 
-      - name: Upload assets to the v1.0.1 release (replace DMG, add Windows EXE)
+      - name: Create release if absent, then upload assets
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          # --clobber replaces same-named assets (the DMG) and adds new ones (EXE)
-          # without touching the release tag, title, or body.
+          # Create the release if it doesn't exist yet
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
+              --notes-file "tools/release-notes-v${UFC_VERSION}.md"
+          # --clobber replaces same-named assets on re-runs without touching
+          # the release tag, title, or body.
           gh release upload "$RELEASE_TAG" \
             artifacts/macos/*.dmg \
             artifacts/windows/*.exe \
