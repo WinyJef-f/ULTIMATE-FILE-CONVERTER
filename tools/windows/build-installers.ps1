@@ -30,11 +30,10 @@ $IconFile     = Join-Path $RepoRoot "Windows\UltimateFileConverter.WinUI\Assets\
 $InstallerSrc = Join-Path $PSScriptRoot "installer"
 $DistRoot     = Join-Path $RepoRoot "dist\windows"
 $PublishDir   = Join-Path $DistRoot "publish"
-$MsiDir       = Join-Path $DistRoot "msi"
 $SetupDir     = Join-Path $DistRoot "setup"
 
 if (Test-Path $PublishDir) { Remove-Item $PublishDir -Recurse -Force }
-New-Item -ItemType Directory -Force -Path $PublishDir, $MsiDir, $SetupDir | Out-Null
+New-Item -ItemType Directory -Force -Path $PublishDir, $SetupDir | Out-Null
 
 # --------------------------------------------------------------------------
 # Build with MSBuild from Visual Studio, not `dotnet`: WinUI 3 needs the
@@ -111,25 +110,6 @@ if (-not (Test-Path (Join-Path $PublishDir $PriName))) {
 Write-Host "    Published to $PublishDir"
 
 # --------------------------------------------------------------------------
-Write-Host "==> Building MSI with WiX..."
-if (-not (Get-Command wix.exe -ErrorAction SilentlyContinue)) {
-    Write-Host "    Installing WiX as a global .NET tool..."
-    dotnet tool install --global wix --version "4.0.5" | Out-Null
-    $env:PATH = "$env:USERPROFILE\.dotnet\tools;$env:PATH"
-}
-
-# The .wxs reads these as $(env.*), which is portable across WiX v4/v5/v6.
-$env:UFC_VERSION    = $Version
-$env:UFC_PUBLISHDIR = $PublishDir
-$env:UFC_ICONFILE   = $IconFile
-
-$Wxs     = Join-Path $InstallerSrc "Product.wxs"
-$MsiPath = Join-Path $MsiDir "ULTIMATE-FILE-CONVERTER-$Version-x64.msi"
-wix build $Wxs -arch x64 -o $MsiPath
-if ($LASTEXITCODE -ne 0) { throw "wix build failed." }
-Write-Host "    MSI:  $MsiPath"
-
-# --------------------------------------------------------------------------
 Write-Host "==> Building EXE installer with Inno Setup..."
 $Iscc = $null
 $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
@@ -152,5 +132,5 @@ if ($Iscc) {
 # --------------------------------------------------------------------------
 Write-Host ""
 Write-Host "==> Done. Artifacts under $DistRoot"
-Get-ChildItem -Path $MsiDir, $SetupDir -File -ErrorAction SilentlyContinue |
+Get-ChildItem -Path $SetupDir -File -ErrorAction SilentlyContinue |
     ForEach-Object { Write-Host ("    {0}  ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB)) }
