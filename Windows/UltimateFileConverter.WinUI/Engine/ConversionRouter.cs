@@ -112,12 +112,26 @@ public static class ConversionRouter
             return ConversionPlan.Single(Tool.Ffmpeg, args, inputPath, outputPath);
         }
 
-        // --- PDF -> Image: rasterize the first page via ImageMagick (uses Ghostscript) ---
+        // --- PDF -> Image: rasterize the first page via mutool draw (no Ghostscript needed) ---
         if (source == FileKind.Pdf && dst == FileCategory.Image)
         {
-            return ConversionPlan.Single(Tool.Magick,
-                new[] { "-density", "200", "{INPUT}[0]", "-quality", q, "{OUTPUT}" },
-                inputPath, outputPath);
+            // mutool draw picks the output format from the file extension.
+            // PNG, JPEG, and BMP are supported natively; all other image targets go through
+            // a temp PNG and then ImageMagick to reach formats mutool can't write directly.
+            if (target is FileKind.Png or FileKind.Jpeg or FileKind.Bmp)
+            {
+                return ConversionPlan.Single(Tool.Mutool,
+                    new[] { "draw", "-o", "{OUTPUT}", "-r", "200", "{INPUT}", "1" },
+                    inputPath, outputPath);
+            }
+            var tmp = System.IO.Path.Combine(AppPathsTemp(), $"{System.Guid.NewGuid():N}.png");
+            return new ConversionPlan(
+                new ConversionStep(Tool.Mutool,
+                    new[] { "draw", "-o", "{OUTPUT}", "-r", "200", "{INPUT}", "1" },
+                    inputPath, tmp),
+                new ConversionStep(Tool.Magick,
+                    new[] { "{INPUT}", "-quality", q, "{OUTPUT}" },
+                    tmp, outputPath));
         }
 
         // --- Document -> Document via pandoc ---

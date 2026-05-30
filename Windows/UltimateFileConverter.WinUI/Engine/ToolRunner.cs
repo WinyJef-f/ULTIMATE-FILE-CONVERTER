@@ -151,9 +151,8 @@ public static class ToolRunner
     }
 
     /// <summary>
-    /// General executable lookup used for dependency probing (e.g. winget itself, or
-    /// Ghostscript, which isn't a routed <see cref="Tool"/>). Searches PATH, the winget shim
-    /// directory, the caller's hint roots, and the winget package store.
+    /// General executable lookup used for dependency probing (e.g. winget itself).
+    /// Searches PATH, the winget shim directory, the caller's hint roots, and the winget package store.
     /// </summary>
     public static string? FindExecutable(string exe, IEnumerable<string>? extraRoots = null)
     {
@@ -206,6 +205,9 @@ public static class ToolRunner
             case Tool.Magick:
                 yield return programFiles;       // ImageMagick-7.x.x-Q16-HDRI\magick.exe
                 yield return programFilesX86;
+                yield return wingetPackages;
+                break;
+            case Tool.Mutool:
                 yield return wingetPackages;
                 break;
             case Tool.Pandoc:

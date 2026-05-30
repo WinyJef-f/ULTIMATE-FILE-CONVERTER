@@ -11,6 +11,7 @@ public enum Tool
 {
     Ffmpeg,
     Magick,
+    Mutool,
     Pandoc,
     Soffice,
     Copy,
@@ -23,6 +24,7 @@ public static class ToolExtensions
     {
         Tool.Ffmpeg => "ffmpeg.exe",
         Tool.Magick => "magick.exe",
+        Tool.Mutool => "mutool.exe",
         Tool.Pandoc => "pandoc.exe",
         Tool.Soffice => "soffice.exe",
         Tool.Copy => "<copy>",
@@ -34,6 +36,7 @@ public static class ToolExtensions
     {
         Tool.Ffmpeg => "FFmpeg",
         Tool.Magick => "ImageMagick",
+        Tool.Mutool => "MuPDF",
         Tool.Pandoc => "Pandoc",
         Tool.Soffice => "LibreOffice",
         Tool.Copy => "file copy",
@@ -45,6 +48,7 @@ public static class ToolExtensions
     {
         Tool.Ffmpeg => "Gyan.FFmpeg",
         Tool.Magick => "ImageMagick.ImageMagick",
+        Tool.Mutool => "ArtifexSoftware.mutool",
         Tool.Pandoc => "JohnMacFarlane.Pandoc",
         Tool.Soffice => "TheDocumentFoundation.LibreOffice",
         _ => string.Empty,
