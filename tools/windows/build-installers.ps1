@@ -114,7 +114,7 @@ Write-Host "    Published to $PublishDir"
 Write-Host "==> Building MSI with WiX..."
 if (-not (Get-Command wix.exe -ErrorAction SilentlyContinue)) {
     Write-Host "    Installing WiX as a global .NET tool..."
-    dotnet tool install --global wix | Out-Null
+    dotnet tool install --global wix --version "4.0.5" | Out-Null
     $env:PATH = "$env:USERPROFILE\.dotnet\tools;$env:PATH"
 }
 
