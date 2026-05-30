@@ -46,7 +46,9 @@ public partial class App : Application
     /// </summary>
     private static void ReportFatal(string source, System.Exception? ex)
     {
-        var detail = ex?.ToString() ?? "(no exception object)";
+        var detail = ex is not null
+            ? $"HResult: 0x{ex.HResult:X8}\n\n{ex}"
+            : "(no exception object)";
 
         try
         {

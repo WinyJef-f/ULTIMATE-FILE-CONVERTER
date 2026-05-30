@@ -9,12 +9,13 @@
     xmlns:conv="using:UltimateFileConverter.WinUI.Converters"
     mc:Ignorable="d">
 
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+        <conv:QueueStatusToBrushConverter x:Key="StatusBrush" />
+    </UserControl.Resources>
+
     <Grid x:Name="RootGrid" AllowDrop="True" DragOver="Root_DragOver" Drop="Root_Drop"
           Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Grid.Resources>
-            <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
-            <conv:QueueStatusToBrushConverter x:Key="StatusBrush" />
-        </Grid.Resources>
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Modifiers="Control" Key="O" Invoked="AddFilesAccelerator_Invoked" />
             <KeyboardAccelerator Modifiers="Control" Key="R" Invoked="ConvertAccelerator_Invoked" />
