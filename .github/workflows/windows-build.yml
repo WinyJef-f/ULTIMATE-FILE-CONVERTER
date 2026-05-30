@@ -1,0 +1,152 @@
+name: Windows build
+
+# Builds the WinUI 3 app with MSBuild from Visual Studio (which provides the
+# AppxPackage / MakePri build tasks that the bare dotnet CLI lacks),
+# publishing self-contained + unpackaged for win-x64. On success the published
+# app is uploaded as an artifact; on failure the errors are posted to the PR as
+# a single rolling comment and the full log is uploaded.
+
+on:
+  push:
+    branches:
+      - "claude/**"
+      - "main"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build & publish (MSBuild, Release, win-x64, self-contained, unpackaged)
+        shell: pwsh
+        run: |
+          $proj   = "$env:GITHUB_WORKSPACE\Windows\UltimateFileConverter.WinUI\UltimateFileConverter.WinUI.csproj"
+          $pub    = "$env:GITHUB_WORKSPACE\publish"
+          # Canonical bin output dir produced by /t:Build (not /t:Publish).
+          # For WindowsPackageType=None, WASDK names the app PRI file after the assembly
+          # (UltimateFileConverter.WinUI.pri, not resources.pri). /t:Publish redirects
+          # $(OutDir) to obj\... and does not copy the PRI to $(PublishDir).
+          $binDir = "$env:GITHUB_WORKSPACE\Windows\UltimateFileConverter.WinUI\bin\x64\Release\net8.0-windows10.0.19041.0\win-x64"
+          $priName = "UltimateFileConverter.WinUI.pri"
+
+          # WindowsAppSDKSelfContained MUST be passed on the CLI, not only set in the
+          # csproj — the WASDK targets that copy Bootstrap.dll / XAML DLLs evaluate this
+          # property before the project file is fully read.
+          msbuild $proj /t:Restore /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64 `
+            /p:WindowsAppSDKSelfContained=true `
+            *>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Full Build pass: compiles XAML → XBF, runs MakePri → resources.pri in $binDir.
+          msbuild $proj /t:Build /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64 `
+            /p:SelfContained=true /p:WindowsPackageType=None /p:WindowsAppSDKSelfContained=true `
+            *>&1 | Tee-Object -FilePath build.log -Append
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          msbuild $proj /t:Publish /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64 `
+            /p:SelfContained=true /p:WindowsPackageType=None /p:WindowsAppSDKSelfContained=true `
+            "/p:PublishDir=$pub/" `
+            *>&1 | Tee-Object -FilePath build.log -Append
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Copy the app PRI file to the publish dir if the csproj AfterTargets hook didn't already do it.
+          # Build puts it in $binDir; Publish uses a different $(OutDir) (obj\...) and omits it.
+          if (-not (Test-Path "$pub\$priName")) {
+            $priSrc = "$binDir\$priName"
+            if (Test-Path $priSrc) {
+              Copy-Item $priSrc "$pub\$priName" -Force
+              "Copied $priName to publish dir" | Tee-Object -FilePath build.log -Append
+            } else {
+              "WARNING: $priName not found in $binDir" | Tee-Object -FilePath build.log -Append
+              "All .pri files in workspace:" | Tee-Object -FilePath build.log -Append
+              Get-ChildItem $env:GITHUB_WORKSPACE -Filter "*.pri" -Recurse -ErrorAction SilentlyContinue |
+                ForEach-Object { "  $($_.FullName)" } | Tee-Object -FilePath build.log -Append
+            }
+          }
+
+      - name: Verify self-contained output
+        if: success()
+        shell: pwsh
+        run: |
+          $pub = "$env:GITHUB_WORKSPACE\publish"
+          # Bootstrap.dll must be in the root (loaded by the OS before any path is set up).
+          # The other DLLs may land directly in the root or inside a Frameworks\ subdirectory
+          # depending on WASDK version, so search recursively for those.
+          # For WindowsPackageType=None, WASDK names the app PRI file after the assembly
+          # (not resources.pri). Without it, LoadComponent throws XamlParseException 0x802B000A.
+          $rootNeeds = @("UltimateFileConverter.WinUI.exe", "Microsoft.WindowsAppRuntime.Bootstrap.dll", "UltimateFileConverter.WinUI.pri")
+          $anywhereNeeds = @("Microsoft.ui.xaml.dll", "coreclr.dll")
+
+          $missing = @(
+            $rootNeeds     | Where-Object { -not (Test-Path (Join-Path $pub $_)) }
+            $anywhereNeeds | Where-Object {
+              -not (Get-ChildItem $pub -Recurse -Filter $_ -ErrorAction SilentlyContinue | Select-Object -First 1)
+            }
+          )
+          $count = (Get-ChildItem $pub -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
+          "Publish output: $count files" | Tee-Object -FilePath build.log -Append
+          if ($missing.Count -gt 0) {
+            "error : self-contained runtime incomplete; missing: $($missing -join ', ')" | Tee-Object -FilePath build.log -Append
+            exit 1
+          }
+          "Self-contained runtime looks complete." | Tee-Object -FilePath build.log -Append
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+
+      - name: Upload published app
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ULTIMATE-FILE-CONVERTER-win-x64
+          path: publish
+          if-no-files-found: error
+
+      - name: Report build errors to PR
+        if: failure()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          $raw = ""
+          if (Test-Path build.log) { $raw = Get-Content build.log -Raw }
+          $lines = $raw -split "`r?`n"
+          $errs = $lines | Where-Object { $_ -match '(?i): error |error [A-Z]+[0-9]|NETSDK[0-9]|MSB[0-9]|XamlCompiler|CS[0-9]{3,}|XLS[0-9]|WMC[0-9]|Build FAILED' } | Select-Object -Last 40
+          $tail = $lines | Select-Object -Last 80
+
+          $body = "### :x: Windows build failed`n`n"
+          $body += "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`n`n"
+          if ($errs) { $body += "**Error / summary lines:**`n``````n" + ($errs -join "`n") + "`n```````n`n" }
+          $body += "<details><summary>Last 80 log lines</summary>`n`n``````n" + ($tail -join "`n") + "`n```````n</details>`n`n<!-- windows-build-status -->"
+          $body | Out-File body.md -Encoding utf8
+
+          $num = gh pr list --head "$env:BRANCH" --state open --json number --jq '.[0].number'
+          if (-not $num) { Write-Host "No open PR for branch $env:BRANCH; skipping comment."; exit 0 }
+          gh pr comment $num --body-file body.md --edit-last 2>$null
+          if ($LASTEXITCODE -ne 0) { gh pr comment $num --body-file body.md }

@@ -1,50 +1,40 @@
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using UltimateFileConverter.WinUI.ViewModels;
-using Windows.ApplicationModel.DataTransfer;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
+using UltimateFileConverter.WinUI.Views;
 
 namespace UltimateFileConverter.WinUI;
 
 public sealed partial class MainWindow : Window
 {
-    public MainViewModel ViewModel { get; } = new();
+    // MainView is created programmatically rather than via <views:MainView> in XAML.
+    // Relying on the WinUI 3 XAML parser to activate a UserControl from a custom sub-namespace
+    // requires the CsWinRT activation factory to be registered before LoadComponent runs;
+    // creating it in C# bypasses that activation path entirely.
+    private readonly MainView _rootView;
 
     public MainWindow()
     {
         InitializeComponent();
-        ExtendsContentIntoTitleBar = false;
-        _ = ViewModel.EnsureDependenciesAsync();
+        Title = "ULTIMATE-FILE-CONVERTER";
+        SetWindowIcon();
+
+        _rootView = new MainView();
+        Content = _rootView;
+        _rootView.Initialize(WinRT.Interop.WindowNative.GetWindowHandle(this));
     }
 
-    private async void AddFiles_Click(object sender, RoutedEventArgs e)
+    private void SetWindowIcon()
     {
-        var picker = new FileOpenPicker
+        try
         {
-            SuggestedStartLocation = PickerLocationId.DocumentsLibrary
-        };
-        picker.FileTypeFilter.Add("*");
-        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
-
-        var files = await picker.PickMultipleFilesAsync();
-        ViewModel.AddFiles(files.Select(file => file.Path));
-    }
-
-    private async void Convert_Click(object sender, RoutedEventArgs e) => await ViewModel.ConvertAsync();
-
-    private void Cancel_Click(object sender, RoutedEventArgs e) => ViewModel.Cancel();
-
-    private void Root_DragOver(object sender, DragEventArgs e)
-    {
-        e.AcceptedOperation = DataPackageOperation.Copy;
-    }
-
-    private async void Root_Drop(object sender, DragEventArgs e)
-    {
-        if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
-        var items = await e.DataView.GetStorageItemsAsync();
-        ViewModel.AddFiles(items.OfType<Windows.Storage.StorageFile>().Select(file => file.Path));
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var id = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+            var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(id);
+            var ico = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Assets", "app.ico");
+            if (System.IO.File.Exists(ico)) appWindow.SetIcon(ico);
+        }
+        catch
+        {
+            // Non-fatal if the icon can't be applied.
+        }
     }
 }

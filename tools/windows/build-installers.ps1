@@ -1,134 +1,159 @@
 <#
-Builds Windows deliverables for the WinUI 3 port:
-  - dist/windows/exe/ULTIMATE-FILE-CONVERTER.exe (published app executable)
-  - dist/windows/msi/ULTIMATE-FILE-CONVERTER-<version>-x64.msi (WiX MSI)
-  - dist/windows/setup/ULTIMATE-FILE-CONVERTER-Setup-<version>-x64.exe (Inno Setup EXE installer, when ISCC.exe is installed)
+.SYNOPSIS
+    Builds the Windows deliverables for ULTIMATE-FILE-CONVERTER (WinUI 3).
 
-Run from the repository root in a Windows Developer PowerShell:
-  pwsh ./tools/windows/build-installers.ps1 -Configuration Release
+.DESCRIPTION
+    1. Publishes the WinUI app as a self-contained, unpackaged win-x64 app.
+    2. Builds an MSI with the WiX toolset (installed automatically as a .NET tool).
+    3. Builds an EXE installer with Inno Setup 6 when ISCC.exe is available.
+
+    Outputs land in dist/windows/:
+        publish/                                              the published app
+        msi/ULTIMATE-FILE-CONVERTER-<version>-x64.msi         Windows Installer package
+        setup/ULTIMATE-FILE-CONVERTER-Setup-<version>-x64.exe Inno Setup installer
+
+.EXAMPLE
+    pwsh ./tools/windows/build-installers.ps1 -Configuration Release
 #>
 param(
     [string]$Configuration = "Release",
     [string]$Version = "1.0.1",
-    [string]$Runtime = "win-x64"
+    [string]$Runtime = "win-x64",
+    [string]$Platform = "x64"
 )
 
 $ErrorActionPreference = "Stop"
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$Project = Join-Path $RepoRoot "Windows\UltimateFileConverter.WinUI\UltimateFileConverter.WinUI.csproj"
-$DistRoot = Join-Path $RepoRoot "dist\windows"
-$PublishDir = Join-Path $DistRoot "publish"
-$ExeDir = Join-Path $DistRoot "exe"
-$MsiDir = Join-Path $DistRoot "msi"
-$SetupDir = Join-Path $DistRoot "setup"
-$InstallerWork = Join-Path $DistRoot "installer-work"
 
-New-Item -ItemType Directory -Force -Path $PublishDir, $ExeDir, $MsiDir, $SetupDir, $InstallerWork | Out-Null
+$RepoRoot     = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$Project      = Join-Path $RepoRoot "Windows\UltimateFileConverter.WinUI\UltimateFileConverter.WinUI.csproj"
+$IconFile     = Join-Path $RepoRoot "Windows\UltimateFileConverter.WinUI\Assets\app.ico"
+$InstallerSrc = Join-Path $PSScriptRoot "installer"
+$DistRoot     = Join-Path $RepoRoot "dist\windows"
+$PublishDir   = Join-Path $DistRoot "publish"
+$MsiDir       = Join-Path $DistRoot "msi"
+$SetupDir     = Join-Path $DistRoot "setup"
 
-Write-Host "Publishing WinUI app..."
-dotnet publish $Project -c $Configuration -r $Runtime --self-contained true -p:WindowsPackageType=None -o $PublishDir
+if (Test-Path $PublishDir) { Remove-Item $PublishDir -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $PublishDir, $MsiDir, $SetupDir | Out-Null
+
+# --------------------------------------------------------------------------
+# Build with MSBuild from Visual Studio, not `dotnet`: WinUI 3 needs the
+# resources.pri / AppxPackage build tasks (Microsoft.Build.Packaging.Pri.Tasks.dll)
+# that ship with VS's MSBuild and aren't present in the bare .NET SDK.
+function Find-MSBuild {
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vswhere) {
+        $found = & $vswhere -latest -prerelease -products * `
+            -requires Microsoft.Component.MSBuild `
+            -find "MSBuild\**\Bin\MSBuild.exe" 2>$null | Select-Object -First 1
+        if ($found -and (Test-Path $found)) { return $found }
+    }
+    $cmd = Get-Command MSBuild.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    return $null
+}
+
+$MSBuild = Find-MSBuild
+if (-not $MSBuild) {
+    throw "MSBuild was not found. Install Visual Studio 2022 with the '.NET Desktop' and 'Windows App SDK / WinUI' components."
+}
+
+Write-Host "==> Restoring ($MSBuild)..."
+# WindowsAppSDKSelfContained MUST be on the command line: the WASDK targets that pull in
+# Bootstrap.dll / XAML DLLs evaluate this property before the csproj body is fully read.
+& $MSBuild $Project /t:Restore /p:Configuration=$Configuration /p:Platform=$Platform /p:RuntimeIdentifier=$Runtime `
+    /p:WindowsAppSDKSelfContained=true
+if ($LASTEXITCODE -ne 0) { throw "Restore failed." }
+
+# Explicit Build before Publish: this is the pass that compiles XAML → XBF and runs MakePri,
+# producing $(AssemblyName).pri in the canonical bin dir. /t:Publish with an explicit PublishDir
+# redirects intermediate output and, on its own, can leave the app PRI out of the publish folder.
+Write-Host "==> Building WinUI app ($Runtime)..."
+& $MSBuild $Project /t:Build `
+    /p:Configuration=$Configuration `
+    /p:Platform=$Platform `
+    /p:RuntimeIdentifier=$Runtime `
+    /p:SelfContained=true `
+    /p:WindowsPackageType=None `
+    /p:WindowsAppSDKSelfContained=true `
+    /p:Version=$Version
+if ($LASTEXITCODE -ne 0) { throw "Build failed." }
+
+Write-Host "==> Publishing WinUI app (self-contained, unpackaged, $Runtime)..."
+# Forward slash on PublishDir avoids the trailing-backslash-inside-quotes arg-escaping bug.
+& $MSBuild $Project /t:Publish `
+    /p:Configuration=$Configuration `
+    /p:Platform=$Platform `
+    /p:RuntimeIdentifier=$Runtime `
+    /p:SelfContained=true `
+    /p:WindowsPackageType=None `
+    /p:WindowsAppSDKSelfContained=true `
+    /p:Version=$Version `
+    "/p:PublishDir=$PublishDir/"
+if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
 
 $AppExe = Join-Path $PublishDir "UltimateFileConverter.WinUI.exe"
-if (-not (Test-Path $AppExe)) {
-    throw "Expected app executable was not produced: $AppExe"
-}
-Copy-Item $AppExe (Join-Path $ExeDir "ULTIMATE-FILE-CONVERTER.exe") -Force
+if (-not (Test-Path $AppExe)) { throw "Publish did not produce $AppExe" }
 
-Write-Host "Preparing WiX MSI manifest..."
-$Wxs = Join-Path $InstallerWork "UltimateFileConverter.wxs"
-$ProductCode = [guid]::NewGuid().ToString().ToUpperInvariant()
-$UpgradeCode = "A5A3DA6A-1C67-4DA8-9E2D-62AE234E6B6D"
-$Files = Get-ChildItem $PublishDir -Recurse -File | Sort-Object FullName
-$Components = New-Object System.Text.StringBuilder
-$Refs = New-Object System.Text.StringBuilder
-$Index = 0
-foreach ($File in $Files) {
-    $Index++
-    $Id = "cmp$Index"
-    $FileId = "fil$Index"
-    $Source = $File.FullName.Replace('&','&amp;')
-    [void]$Components.AppendLine("      <Component Id=`"$Id`" Guid=`"$([guid]::NewGuid().ToString().ToUpperInvariant())`">")
-    [void]$Components.AppendLine("        <File Id=`"$FileId`" Source=`"$Source`" />")
-    if ($File.Name -eq "UltimateFileConverter.WinUI.exe") {
-        [void]$Components.AppendLine("        <Shortcut Id=`"ApplicationStartMenuShortcut`" Directory=`"ApplicationProgramsFolder`" Name=`"ULTIMATE-FILE-CONVERTER`" WorkingDirectory=`"INSTALLFOLDER`" Advertise=`"no`" />")
-        [void]$Components.AppendLine("        <Shortcut Id=`"ApplicationDesktopShortcut`" Directory=`"DesktopFolder`" Name=`"ULTIMATE-FILE-CONVERTER`" WorkingDirectory=`"INSTALLFOLDER`" Advertise=`"no`" />")
-        [void]$Components.AppendLine("        <RemoveFolder Id=`"ApplicationProgramsFolder`" On=`"uninstall`" />")
-        [void]$Components.AppendLine("        <RegistryValue Root=`"HKCU`" Key=`"Software\ULTIMATE-FILE-CONVERTER`" Name=`"installed`" Type=`"integer`" Value=`"1`" KeyPath=`"yes`" />")
+# Safety net: ensure the app PRI (compiled XAML) is in the publish folder. Without it the app
+# starts but throws XamlParseException 0x802B000A on the first LoadComponent call. The csproj
+# AfterTargets hook normally copies it; if it didn't, pull it from the bin output of the Build above.
+$PriName = "UltimateFileConverter.WinUI.pri"
+if (-not (Test-Path (Join-Path $PublishDir $PriName))) {
+    $BinPri = Join-Path $RepoRoot "Windows\UltimateFileConverter.WinUI\bin\$Platform\$Configuration\net8.0-windows10.0.19041.0\$Runtime\$PriName"
+    if (Test-Path $BinPri) {
+        Copy-Item $BinPri (Join-Path $PublishDir $PriName) -Force
+        Write-Host "    Copied $PriName into publish folder."
+    } else {
+        throw "Required $PriName not found in publish folder or bin output ($BinPri)."
     }
-    [void]$Components.AppendLine("      </Component>")
-    [void]$Refs.AppendLine("      <ComponentRef Id=`"$Id`" />")
 }
+Write-Host "    Published to $PublishDir"
 
-@"
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Name="ULTIMATE-FILE-CONVERTER" Manufacturer="ULTIMATE-FILE-CONVERTER" Version="$Version" UpgradeCode="$UpgradeCode" Scope="perMachine">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of ULTIMATE-FILE-CONVERTER is already installed." />
-    <MediaTemplate EmbedCab="yes" />
-    <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="ULTIMATE-FILE-CONVERTER">
-$Components
-      </Directory>
-    </StandardDirectory>
-    <StandardDirectory Id="ProgramMenuFolder">
-      <Directory Id="ApplicationProgramsFolder" Name="ULTIMATE-FILE-CONVERTER" />
-    </StandardDirectory>
-    <StandardDirectory Id="DesktopFolder" />
-    <Feature Id="MainFeature" Title="ULTIMATE-FILE-CONVERTER" Level="1">
-$Refs
-    </Feature>
-  </Package>
-</Wix>
-"@ | Set-Content -Encoding UTF8 $Wxs
-
-$Wix = Get-Command wix.exe -ErrorAction SilentlyContinue
-if (-not $Wix) {
-    Write-Host "Installing WiX .NET tool..."
-    dotnet tool install --global wix --version 5.*
+# --------------------------------------------------------------------------
+Write-Host "==> Building MSI with WiX..."
+# Pin to WiX v5: it has the <Files> directory-harvesting element used by Product.wxs
+# (added in v5, absent in v4) but predates the Open Source Maintenance Fee EULA gate
+# that v6+ enforce (WIX7015) - so the MSI builds with no EULA acceptance required.
+if (-not (Get-Command wix.exe -ErrorAction SilentlyContinue)) {
+    Write-Host "    Installing WiX v5 as a global .NET tool..."
+    dotnet tool install --global wix --version "5.0.2" | Out-Null
     $env:PATH = "$env:USERPROFILE\.dotnet\tools;$env:PATH"
 }
 
+# The .wxs reads these as $(env.*), which is portable across WiX v4/v5/v6.
+$env:UFC_VERSION    = $Version
+$env:UFC_PUBLISHDIR = $PublishDir
+$env:UFC_ICONFILE   = $IconFile
+
+$Wxs     = Join-Path $InstallerSrc "Product.wxs"
 $MsiPath = Join-Path $MsiDir "ULTIMATE-FILE-CONVERTER-$Version-x64.msi"
 wix build $Wxs -arch x64 -o $MsiPath
+if ($LASTEXITCODE -ne 0) { throw "wix build failed." }
+Write-Host "    MSI:  $MsiPath"
 
-$IssPath = Join-Path $InstallerWork "UltimateFileConverter.iss"
-@"
-[Setup]
-AppId={{A5A3DA6A-1C67-4DA8-9E2D-62AE234E6B6D}
-AppName=ULTIMATE-FILE-CONVERTER
-AppVersion=$Version
-AppPublisher=ULTIMATE-FILE-CONVERTER
-DefaultDirName={autopf}\ULTIMATE-FILE-CONVERTER
-DefaultGroupName=ULTIMATE-FILE-CONVERTER
-OutputDir=$SetupDir
-OutputBaseFilename=ULTIMATE-FILE-CONVERTER-Setup-$Version-x64
-Compression=lzma2
-SolidCompression=yes
-WizardStyle=modern
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
-
-[Files]
-Source: "$PublishDir\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-[Icons]
-Name: "{group}\ULTIMATE-FILE-CONVERTER"; Filename: "{app}\UltimateFileConverter.WinUI.exe"
-Name: "{commondesktop}\ULTIMATE-FILE-CONVERTER"; Filename: "{app}\UltimateFileConverter.WinUI.exe"; Tasks: desktopicon
-
-[Tasks]
-Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"
-
-[Run]
-Filename: "{app}\UltimateFileConverter.WinUI.exe"; Description: "Launch ULTIMATE-FILE-CONVERTER"; Flags: nowait postinstall skipifsilent
-"@ | Set-Content -Encoding UTF8 $IssPath
-
-$Inno = Get-Command ISCC.exe -ErrorAction SilentlyContinue
-if ($Inno) {
-    & $Inno.Source $IssPath
-} else {
-    Write-Warning "ISCC.exe was not found. Install Inno Setup 6 and rerun to create the EXE installer. Script written to $IssPath"
+# --------------------------------------------------------------------------
+Write-Host "==> Building EXE installer with Inno Setup..."
+$Iscc = $null
+$cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+if ($cmd) { $Iscc = $cmd.Source }
+foreach ($candidate in @(
+        "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+        "${env:ProgramFiles}\Inno Setup 6\ISCC.exe")) {
+    if (-not $Iscc -and (Test-Path $candidate)) { $Iscc = $candidate }
 }
 
-Write-Host "Windows artifacts:"
-Write-Host "  Published app EXE: $(Join-Path $ExeDir 'ULTIMATE-FILE-CONVERTER.exe')"
-Write-Host "  MSI installer:     $MsiPath"
-Write-Host "  EXE installer:     $(Join-Path $SetupDir "ULTIMATE-FILE-CONVERTER-Setup-$Version-x64.exe")"
+if ($Iscc) {
+    $Iss = Join-Path $InstallerSrc "setup.iss"
+    & $Iscc "/DAppVersion=$Version" "/DPublishDir=$PublishDir" "/DIconFile=$IconFile" "/O$SetupDir" $Iss
+    if ($LASTEXITCODE -ne 0) { throw "Inno Setup (ISCC.exe) failed." }
+    Write-Host "    EXE:  $(Join-Path $SetupDir "ULTIMATE-FILE-CONVERTER-Setup-$Version-x64.exe")"
+} else {
+    Write-Warning "Inno Setup (ISCC.exe) not found - skipped the EXE installer. Install Inno Setup 6 and rerun to build it."
+}
+
+# --------------------------------------------------------------------------
+Write-Host ""
+Write-Host "==> Done. Artifacts under $DistRoot"
+Get-ChildItem -Path $MsiDir, $SetupDir -File -ErrorAction SilentlyContinue |
+    ForEach-Object { Write-Host ("    {0}  ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB)) }

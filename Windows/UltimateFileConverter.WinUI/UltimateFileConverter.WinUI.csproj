@@ -1,26 +1,72 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <RootNamespace>UltimateFileConverter.WinUI</RootNamespace>
+    <AssemblyName>UltimateFileConverter.WinUI</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <!-- Constrain the RID set to x64. Left unset, WindowsAppSDK/CsWinRT inject the legacy
+         win10-* (incl. ARM32) and *-aot RIDs; .NET then has no runtime pack for win10-arm
+         and fails with NETSDK1082. We only ship x64, so this is the full supported set. -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
+
+    <!-- Unpackaged, fully self-contained: no separate .NET or Windows App SDK runtime install needed. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+
+    <!-- Windows App SDK 1.5 references legacy win10-* / *-aot RIDs; .NET 8 dropped those
+         from its default RID model, so enable the full RID graph to resolve them (NETSDK1083). -->
+    <UseRidGraph>true</UseRidGraph>
+
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-    <WindowsPackageType>None</WindowsPackageType>
-    <PublishSingleFile>false</PublishSingleFile>
-    <SelfContained>true</SelfContained>
-    <EnableMsixTooling>true</EnableMsixTooling>
-  </PropertyGroup>
 
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <Authors>Jeffrey Heiler</Authors>
+    <Product>ULTIMATE-FILE-CONVERTER</Product>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240802000" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- For WindowsPackageType=None, WASDK names the app PRI file after the assembly
+       ($(AssemblyName).pri, not resources.pri). /t:Publish redirects $(OutDir) to obj\...
+       and does not include the PRI in its copy list. Use the canonical bin path instead. -->
+  <Target Name="PublishAppResourcesPri" AfterTargets="Publish"
+          Condition="'$(PublishDir)' != ''">
+    <PropertyGroup>
+      <!-- Reconstruct the bin output path; $(OutDir) is unreliable under /t:Publish. -->
+      <_CanonicalBinPri>$(BaseOutputPath)$(Platform)\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\$(AssemblyName).pri</_CanonicalBinPri>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_CanonicalBinPri)"
+          DestinationFolder="$(PublishDir)" OverwriteReadOnlyFiles="true"
+          Condition="Exists('$(_CanonicalBinPri)')" />
+    <!-- Fallback: $(OutDir) when it wasn't redirected (e.g. local msbuild /t:Publish). -->
+    <Copy SourceFiles="$(OutDir)$(AssemblyName).pri"
+          DestinationFolder="$(PublishDir)" OverwriteReadOnlyFiles="true"
+          Condition="!Exists('$(PublishDir)$(AssemblyName).pri') and Exists('$(OutDir)$(AssemblyName).pri')" />
+  </Target>
+
 </Project>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  WiX v4/v5/v6 authoring for the ULTIMATE-FILE-CONVERTER MSI.
+  The published, self-contained app folder is harvested automatically by <Files>.
+  Inputs are passed as environment variables (stable across WiX versions):
+      UFC_VERSION     - product version, e.g. 1.0.2
+      UFC_PUBLISHDIR  - path to the `dotnet publish` output folder
+      UFC_ICONFILE    - path to Assets\app.ico
+  Built by tools/windows/build-installers.ps1.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="ULTIMATE-FILE-CONVERTER"
+           Manufacturer="Jeffrey Heiler"
+           Version="$(env.UFC_VERSION)"
+           UpgradeCode="A5A3DA6A-1C67-4DA8-9E2D-62AE234E6B6D"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of ULTIMATE-FILE-CONVERTER is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="$(env.UFC_ICONFILE)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/WinyJef-f/ULTIMATE-FILE-CONVERTER" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="ULTIMATE-FILE-CONVERTER" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppShortcutFolder" Name="ULTIMATE-FILE-CONVERTER" />
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="Main" Title="ULTIMATE-FILE-CONVERTER" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <!-- Harvest every published file into Program Files\ULTIMATE-FILE-CONVERTER. -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(env.UFC_PUBLISHDIR)\**" />
+    </ComponentGroup>
+
+    <Component Id="StartMenuShortcut" Directory="AppShortcutFolder" Guid="7C2E9F1A-4B6D-4F8E-9A21-2D4C7E1A55B1">
+      <Shortcut Id="StartMenuSc" Name="ULTIMATE-FILE-CONVERTER"
+                Target="[INSTALLFOLDER]UltimateFileConverter.WinUI.exe"
+                WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+      <RemoveFolder Id="RemoveAppShortcutFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\ULTIMATE-FILE-CONVERTER" Name="installed"
+                     Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="1F9B6C44-8E5A-4C2B-B6F0-9A3D2E7C44A2">
+      <Shortcut Id="DesktopSc" Name="ULTIMATE-FILE-CONVERTER"
+                Target="[INSTALLFOLDER]UltimateFileConverter.WinUI.exe"
+                WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+      <RegistryValue Root="HKCU" Key="Software\ULTIMATE-FILE-CONVERTER" Name="desktopShortcut"
+                     Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+  </Package>
+</Wix>
