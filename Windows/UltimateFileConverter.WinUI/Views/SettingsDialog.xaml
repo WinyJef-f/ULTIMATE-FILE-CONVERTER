@@ -100,6 +100,23 @@
                          Message="By enabling this, you can turn ANY file into ANY OTHER file. this may cause unexpected results, or it wont even work at all. Don't say i didn't warn you." />
             </StackPanel>
 
+            <!-- Full History -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="Full History" FontWeight="SemiBold" />
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="FullHistoryCountLabel" Grid.Column="0" VerticalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <Button x:Name="ClearFullHistoryButton" Grid.Column="1" Content="Clear…"
+                            Click="ClearFullHistory_Click" />
+                </Grid>
+                <TextBlock Text="Stats use full history. Clearing it resets all conversion stats permanently."
+                           FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+
         </StackPanel>
     </ScrollViewer>
 </ContentDialog>

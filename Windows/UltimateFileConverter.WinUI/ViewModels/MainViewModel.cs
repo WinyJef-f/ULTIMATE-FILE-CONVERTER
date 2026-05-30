@@ -14,9 +14,12 @@ namespace UltimateFileConverter.WinUI.ViewModels;
 /// </summary>
 public sealed class MainViewModel : INotifyPropertyChanged
 {
-    private const int MaxHistory = 100;
+    private const int MaxRecentHistory = 25;
+    private const int MaxFullHistory = 10_000;
 
     private ConversionSettings _settings;
+    /// <summary>Full history log used by stats. Survives "Clear History". Plain list, not shown in UI directly.</summary>
+    private List<HistoryEntry> _fullHistory = new();
     private FileKind? _targetFormat;
     private bool _isConverting;
     private CancellationTokenSource? _cts;
@@ -29,6 +32,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             History.Add(entry);
         }
+        _fullHistory = HistoryStore.LoadFull();
         History.CollectionChanged += (_, _) => RaisePropertyChanged(nameof(ShowEmptyState));
     }
 
@@ -347,7 +351,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         RaiseQueueDerived();
     }
 
-    public ConversionStats Stats => ConversionStats.Compute(History);
+    public ConversionStats Stats => ConversionStats.Compute(_fullHistory);
 
     private string ComputeOutputPath(QueueItem item)
     {
@@ -360,6 +364,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     // MARK: - History
 
+    /// <summary>Clears recent history shown in the main view. Full history (and stats) are unaffected.</summary>
     public void ClearHistory()
     {
         History.Clear();
@@ -369,17 +374,34 @@ public sealed class MainViewModel : INotifyPropertyChanged
         RaisePropertyChanged(nameof(ShowEmptyState));
     }
 
+    /// <summary>Clears the full history log, resetting all stats.</summary>
+    public void ClearFullHistory()
+    {
+        _fullHistory.Clear();
+        HistoryStore.SaveFull(_fullHistory);
+        RaisePropertyChanged(nameof(FullHistoryCount));
+    }
+
+    public int FullHistoryCount => _fullHistory.Count;
+
     private void AddHistoryEntry(HistoryEntry entry)
     {
+        // Recent (shown in main view)
         History.Insert(0, entry);
-        while (History.Count > MaxHistory)
-        {
+        while (History.Count > MaxRecentHistory)
             History.RemoveAt(History.Count - 1);
-        }
         HistoryStore.Save(History);
+
+        // Full (used for stats, persists across recent clears)
+        _fullHistory.Insert(0, entry);
+        while (_fullHistory.Count > MaxFullHistory)
+            _fullHistory.RemoveAt(_fullHistory.Count - 1);
+        HistoryStore.SaveFull(_fullHistory);
+
         RaisePropertyChanged(nameof(HasHistory));
         RaisePropertyChanged(nameof(HistoryCountText));
         RaisePropertyChanged(nameof(ShowEmptyState));
+        RaisePropertyChanged(nameof(FullHistoryCount));
     }
 
     // MARK: - Helpers

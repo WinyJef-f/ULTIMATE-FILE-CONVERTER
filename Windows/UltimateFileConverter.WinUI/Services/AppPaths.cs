@@ -24,6 +24,9 @@ public static class AppPaths
 
     public static string HistoryFile => System.IO.Path.Combine(DataFolder, "history.json");
 
+    /// <summary>Full history log used by the stats dashboard. Survives "Clear History".</summary>
+    public static string FullHistoryFile => System.IO.Path.Combine(DataFolder, "history-full.json");
+
     /// <summary>Marker that records first-run dependency setup completed.</summary>
     public static string DependencyMarkerFile => System.IO.Path.Combine(DataFolder, "dependencies-v1.ok");
 

@@ -3,9 +3,12 @@ import AppKit
 
 struct SettingsSheet: View {
     @Binding var settings: ConversionSettings
+    let fullHistoryCount: Int
+    let onClearFullHistory: () -> Void
     @Environment(\.dismiss) var dismiss
 
     @State private var showExperimentalAlert = false
+    @State private var showClearFullHistoryAlert = false
 
     private let experimentalWarning = "By enabling this, you can turn ANY file into ANY OTHER file. this may cause unexpected results, or it wont even work at all. Don't say i didn't warn you."
 
@@ -114,10 +117,36 @@ struct SettingsSheet: View {
                 } header: {
                     Label("Experimental", systemImage: "exclamationmark.triangle")
                 }
+
+                Section {
+                    HStack {
+                        Text("\(fullHistoryCount) conversion\(fullHistoryCount == 1 ? "" : "s") recorded")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Clear…") {
+                            showClearFullHistoryAlert = true
+                        }
+                        .foregroundStyle(.red)
+                    }
+                } header: {
+                    Label("Full History", systemImage: "clock.arrow.circlepath")
+                } footer: {
+                    Text("Stats use full history. Clearing it resets all conversion stats permanently.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .formStyle(.grouped)
         }
-        .frame(width: 560, height: 520)
+        .frame(width: 560, height: 600)
+        .alert("Clear full history?", isPresented: $showClearFullHistoryAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear", role: .destructive) {
+                onClearFullHistory()
+            }
+        } message: {
+            Text("This permanently deletes all \(fullHistoryCount) conversion record\(fullHistoryCount == 1 ? "" : "s") and resets your stats. Recent history in the main view is not affected.")
+        }
         .alert("Enable experimental conversions?", isPresented: $showExperimentalAlert) {
             Button("Cancel", role: .cancel) {
                 settings.weirdModeEnabled = false

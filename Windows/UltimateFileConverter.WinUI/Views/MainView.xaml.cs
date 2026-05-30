@@ -133,7 +133,10 @@ public sealed partial class MainView : UserControl
 
     private async void Settings_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new SettingsDialog(ViewModel.Settings, _windowHandle) { XamlRoot = XamlRoot };
+        var dialog = new SettingsDialog(
+            ViewModel.Settings, _windowHandle,
+            ViewModel.FullHistoryCount, ViewModel.ClearFullHistory)
+        { XamlRoot = XamlRoot };
         var result = await dialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
         {

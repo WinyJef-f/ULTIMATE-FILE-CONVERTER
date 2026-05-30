@@ -17,7 +17,9 @@ struct ContentView: View {
         .frame(minWidth: 640, idealWidth: 760, minHeight: 520, idealHeight: 680)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showSettings) {
-            SettingsSheet(settings: $vm.settings)
+            SettingsSheet(settings: $vm.settings,
+                          fullHistoryCount: vm.fullHistory.count,
+                          onClearFullHistory: { vm.clearFullHistory() })
         }
         .sheet(isPresented: $showDashboard) {
             DashboardSheet(stats: vm.stats)

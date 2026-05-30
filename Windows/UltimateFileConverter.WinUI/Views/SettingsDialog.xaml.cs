@@ -7,15 +7,18 @@ namespace UltimateFileConverter.WinUI.Views;
 public sealed partial class SettingsDialog : ContentDialog
 {
     private readonly System.IntPtr _windowHandle;
+    private readonly System.Action _onClearFullHistory;
     private string? _customFolderPath;
 
     /// <summary>The edited settings. Read this only when <see cref="ContentDialog.ShowAsync"/> returns Primary.</summary>
     public ConversionSettings Result { get; private set; }
 
-    public SettingsDialog(ConversionSettings current, System.IntPtr windowHandle)
+    public SettingsDialog(ConversionSettings current, System.IntPtr windowHandle,
+                          int fullHistoryCount, System.Action onClearFullHistory)
     {
         InitializeComponent();
         _windowHandle = windowHandle;
+        _onClearFullHistory = onClearFullHistory;
         Result = current.Clone();
         _customFolderPath = current.CustomOutputFolderPath;
 
@@ -26,6 +29,7 @@ public sealed partial class SettingsDialog : ContentDialog
         FolderPathText.Text = string.IsNullOrWhiteSpace(_customFolderPath) ? "No folder chosen" : _customFolderPath;
         ExperimentalToggle.IsOn = current.WeirdModeEnabled;
         ExperimentalWarning.IsOpen = current.WeirdModeEnabled;
+        FullHistoryCountLabel.Text = FormatCount(fullHistoryCount);
 
         PrimaryButtonClick += (_, _) => Result = BuildSettings();
     }
@@ -78,6 +82,36 @@ public sealed partial class SettingsDialog : ContentDialog
             FolderPathText.Text = folder.Path;
         }
     }
+
+    private void ClearFullHistory_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        // ContentDialog can't host a second ContentDialog, so use a Flyout for confirmation.
+        var panel = new StackPanel { Spacing = 10, Width = 230 };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "This permanently deletes all conversion records and resets your stats. Recent history in the main view is not affected.",
+            TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
+            FontSize = 12,
+        });
+        var confirmBtn = new Button
+        {
+            Content = "Yes, clear history",
+            HorizontalAlignment = Microsoft.UI.Xaml.HorizontalAlignment.Stretch,
+        };
+        panel.Children.Add(confirmBtn);
+
+        var flyout = new Flyout { Content = panel };
+        confirmBtn.Click += (_, _) =>
+        {
+            flyout.Hide();
+            _onClearFullHistory();
+            FullHistoryCountLabel.Text = FormatCount(0);
+        };
+        flyout.ShowAt(ClearFullHistoryButton);
+    }
+
+    private static string FormatCount(int count) =>
+        $"{count} conversion{(count == 1 ? "" : "s")} recorded";
 
     private static void SelectComboByTag(ComboBox combo, string tag, int fallbackIndex)
     {
