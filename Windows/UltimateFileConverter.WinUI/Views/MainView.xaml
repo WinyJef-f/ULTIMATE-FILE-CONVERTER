@@ -15,7 +15,7 @@
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid" AllowDrop="True" DragOver="Root_DragOver" Drop="Root_Drop"
-          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+          Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Modifiers="Control" Key="O" Invoked="AddFilesAccelerator_Invoked" />
             <KeyboardAccelerator Modifiers="Control" Key="R" Invoked="ConvertAccelerator_Invoked" />

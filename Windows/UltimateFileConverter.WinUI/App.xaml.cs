@@ -17,7 +17,23 @@ public partial class App : Application
         try
         {
             InitializeComponent();
-            UnhandledException += (_, e) => { ReportFatal("UI", e.Exception); e.Handled = true; };
+            UnhandledException += (_, e) => { ReportFatal("UI: " + e.Message, e.Exception); e.Handled = true; };
+
+            // When a {StaticResource}/{ThemeResource} key or an x:Bind path can't be resolved,
+            // XAML surfaces only a generic XamlParseException (0x802B000A). These trace events
+            // fire *during* the parse and name the exact key/binding, so a future failure lands
+            // in startup-error.log with something actionable instead of a generic code.
+            try
+            {
+                DebugSettings.IsXamlResourceReferenceTracingEnabled = true;
+                DebugSettings.IsBindingTracingEnabled = true;
+                DebugSettings.XamlResourceReferenceFailed += (_, e) => AppendLog("XamlResourceReferenceFailed", e.Message);
+                DebugSettings.BindingFailed += (_, e) => AppendLog("BindingFailed", e.Message);
+            }
+            catch
+            {
+                // Tracing is best-effort diagnostics only.
+            }
         }
         catch (System.Exception ex)
         {
@@ -50,6 +66,23 @@ public partial class App : Application
             ? $"HResult: 0x{ex.HResult:X8}\n\n{ex}"
             : "(no exception object)";
 
+        AppendLog(source, detail);
+
+        try
+        {
+            var message = detail.Length > 1500 ? detail[..1500] + "\n…" : detail;
+            MessageBoxW(System.IntPtr.Zero, message,
+                "ULTIMATE-FILE-CONVERTER failed to start", 0x10 /* MB_ICONERROR */);
+        }
+        catch
+        {
+            // If even the message box fails, the log above is the fallback.
+        }
+    }
+
+    /// <summary>Appends a timestamped entry to %LOCALAPPDATA%\ULTIMATE-FILE-CONVERTER\startup-error.log.</summary>
+    private static void AppendLog(string source, string detail)
+    {
         try
         {
             var dir = System.IO.Path.Combine(
@@ -63,17 +96,6 @@ public partial class App : Application
         catch
         {
             // Logging is best-effort.
-        }
-
-        try
-        {
-            var message = detail.Length > 1500 ? detail[..1500] + "\n…" : detail;
-            MessageBoxW(System.IntPtr.Zero, message,
-                "ULTIMATE-FILE-CONVERTER failed to start", 0x10 /* MB_ICONERROR */);
-        }
-        catch
-        {
-            // If even the message box fails, the log above is the fallback.
         }
     }
 
