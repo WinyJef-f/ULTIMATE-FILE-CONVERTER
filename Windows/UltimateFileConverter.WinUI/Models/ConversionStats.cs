@@ -23,11 +23,6 @@ public sealed class ConversionStats
     public string TotalFailuresText => TotalFailures.ToString();
     public string FormattedBytes => FormatBytes(TotalBytesProcessed);
 
-    public Microsoft.UI.Xaml.Visibility HasTopFormats =>
-        TopFormatsItems.Count > 0 ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
-    public Microsoft.UI.Xaml.Visibility HasTopPairs =>
-        TopPairsItems.Count > 0 ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
-
     public static ConversionStats Compute(IEnumerable<HistoryEntry> history)
     {
         var all = history.ToList();

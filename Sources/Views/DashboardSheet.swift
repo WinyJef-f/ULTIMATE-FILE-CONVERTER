@@ -85,7 +85,7 @@ struct DashboardSheet: View {
             Text(title).font(.headline)
             VStack(spacing: 0) {
                 ForEach(Array(items.enumerated()), id: \.offset) { idx, item in
-                    barRow(label: item.0, count: item.1, max: maxCount)
+                    barRow(label: item.0, count: item.1, maxValue: maxCount)
                     if idx < items.count - 1 {
                         Divider().padding(.leading, 12)
                     }
@@ -102,8 +102,8 @@ struct DashboardSheet: View {
         }
     }
 
-    private func barRow(label: String, count: Int, max: Int) -> some View {
-        let fraction = max > 0 ? CGFloat(count) / CGFloat(max) : 0
+    private func barRow(label: String, count: Int, maxValue: Int) -> some View {
+        let fraction = maxValue > 0 ? CGFloat(count) / CGFloat(maxValue) : 0
         return HStack(spacing: 10) {
             Text(label)
                 .frame(maxWidth: .infinity, alignment: .leading)
