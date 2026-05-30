@@ -6,7 +6,7 @@
 - **App icon shows up correctly** in Finder, Dock, and the About window. v1.0.0 had `CFBundleIconFile` set in the wrong way for xcodebuild to honor — fixed by switching to an Asset Catalog.
 - **Installer license/readme text is readable in dark mode.** Previously the code-block backgrounds were nearly white-on-light because the pages inherited macOS dark mode. Forced to light mode with explicit colors.
 - **DMG is ~350 MB** — bigger than v1.0.0's 343 KB because everything is now bundled (LibreOffice alone is ~300 MB compressed). In exchange you get a true one-and-done install.
-- **Windows port added.** WinUI 3 app with full feature parity: drag-and-drop, batch conversion, conversion history, and settings persistence. Ships as both an Inno Setup EXE and a Windows Installer MSI.
+- **Windows port added.** WinUI 3 app with full feature parity: drag-and-drop, batch conversion, conversion history, and settings persistence. Ships as an Inno Setup EXE.
 
 ## Install — macOS
 
@@ -19,7 +19,7 @@
 
 ## Install — Windows
 
-1. Download **`ULTIMATE-FILE-CONVERTER-Setup-1.0.1-x64.exe`** (recommended) or the **`.msi`** below
+1. Download **`ULTIMATE-FILE-CONVERTER-Setup-1.0.1-x64.exe`** below
 2. Run the installer and click through — it installs to Program Files and adds a Start Menu shortcut
 3. Open **ULTIMATE-FILE-CONVERTER** and convert files
 

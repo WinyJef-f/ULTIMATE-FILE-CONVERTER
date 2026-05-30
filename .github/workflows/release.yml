@@ -3,7 +3,7 @@ name: Release v1.0.1
 # Builds the shipping artifacts on their native runners and attaches them to the
 # existing v1.0.1 GitHub release:
 #   - macOS:   ULTIMATE-FILE-CONVERTER-1.0.1.dmg  (rebuilt; replaces the existing asset)
-#   - Windows: ULTIMATE-FILE-CONVERTER-1.0.1-x64.msi  +  ...-Setup-1.0.1-x64.exe
+#   - Windows: ULTIMATE-FILE-CONVERTER-Setup-1.0.1-x64.exe
 #
 # Assets are uploaded with `gh release upload --clobber`, which adds/replaces files on the
 # release WITHOUT modifying its tag, title, or notes.
@@ -47,7 +47,7 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Build installers (MSI + EXE)
+      - name: Build EXE installer
         shell: pwsh
         run: |
           choco install innosetup -y --no-progress *>&1 | Tee-Object -FilePath build.log
@@ -73,9 +73,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installers
-          path: |
-            dist/windows/msi/*.msi
-            dist/windows/setup/*.exe
+          path: dist/windows/setup/*.exe
           if-no-files-found: error
 
       - name: Upload Windows build log
@@ -163,15 +161,14 @@ jobs:
       - name: List downloaded artifacts
         run: find artifacts -type f -printf '%p  (%s bytes)\n'
 
-      - name: Upload assets to the v1.0.1 release (replace DMG, add Windows installers)
+      - name: Upload assets to the v1.0.1 release (replace DMG, add Windows EXE)
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          # --clobber replaces same-named assets (the DMG) and adds new ones (MSI/EXE)
+          # --clobber replaces same-named assets (the DMG) and adds new ones (EXE)
           # without touching the release tag, title, or body.
           gh release upload "$RELEASE_TAG" \
             artifacts/macos/*.dmg \
-            artifacts/windows/msi/*.msi \
-            artifacts/windows/setup/*.exe \
+            artifacts/windows/*.exe \
             --clobber

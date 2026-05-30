@@ -35,12 +35,12 @@ A universal desktop app for converting files between dozens of formats &mdash; *
 
 ### Windows
 
-1. Build or download either **`ULTIMATE-FILE-CONVERTER-Setup-<version>-x64.exe`** (Inno Setup wizard) or **`ULTIMATE-FILE-CONVERTER-<version>-x64.msi`** (Windows Installer).
-2. Install on Windows 10 2004+ / Windows 11. The app is fully self-contained &mdash; no separate .NET or Windows App SDK runtime is required.
-3. Launch **ULTIMATE-FILE-CONVERTER**. On first run a setup dialog offers to install the conversion tools with **winget**: FFmpeg, ImageMagick, Ghostscript, Pandoc, and LibreOffice. Windows may prompt for permission per package.
+1. Download **`ULTIMATE-FILE-CONVERTER-Setup-<version>-x64.exe`** from [Releases](https://github.com/WinyJef-f/ULTIMATE-FILE-CONVERTER/releases/latest).
+2. Run the installer on Windows 10 22H2+ / Windows 11. The app installs to Program Files and adds a Start Menu shortcut.
+3. Launch **ULTIMATE-FILE-CONVERTER**. On first run a setup dialog offers to install the conversion tools with **winget**: FFmpeg, ImageMagick, MuPDF, Pandoc, and LibreOffice. Windows may prompt for permission per package.
 4. If a tool was installed while the app was open and isn't picked up, restart the app, then convert files normally.
 
-**Dependency setup differs by platform.** The macOS installer ships or locates the CLI tools depending on the release build. The Windows installer stays lean and the WinUI 3 app installs missing tools with winget on first run (re-runnable anytime from the toolbar). Image, SVG, and PDF rasterization use platform-appropriate engines: macOS native frameworks (CGImage / NSImage / CGPDFDocument) and ImageMagick (with Ghostscript for PDF) on Windows.
+**Dependency setup differs by platform.** The macOS installer bundles the CLI tools inside the `.app`. The Windows app installs tools with winget on first run (re-runnable anytime from the toolbar). Image, SVG, and PDF rasterization use platform-appropriate engines: macOS native frameworks (CGImage / NSImage / CGPDFDocument) and ImageMagick + MuPDF on Windows.
 
 The app is not notarized, so on first launch macOS may show a Gatekeeper warning. Right-click &rarr; Open the first time, or run `xattr -dr com.apple.quarantine /Applications/ULTIMATE-FILE-CONVERTER.app`.
 
@@ -83,26 +83,26 @@ open ULTIMATE-FILE-CONVERTER.xcodeproj
 
 ### Windows build
 
-Requires Windows 10 2004+ or Windows 11, the **.NET 8 SDK**, and **Visual Studio 2022** with the **.NET Desktop** and **Windows App SDK / WinUI** components. The build script publishes with Visual Studio's MSBuild (which provides WinUI's `resources.pri` tooling that the bare `dotnet` CLI lacks). It installs the **WiX** toolset automatically as a .NET tool; **Inno Setup 6** is optional and only needed for the `.exe` installer.
+Requires Windows 10 22H2+ or Windows 11, the **.NET 8 SDK**, and **Visual Studio 2022** with the **.NET Desktop** and **Windows App SDK / WinUI** components. The build script publishes with Visual Studio's MSBuild (which provides WinUI's `resources.pri` tooling that the bare `dotnet` CLI lacks). **Inno Setup 6** is required to build the `.exe` installer.
 
 ```powershell
 git clone https://github.com/WinyJef-f/ULTIMATE-FILE-CONVERTER.git
 cd ULTIMATE-FILE-CONVERTER
 
-# Publishes the app and builds the MSI (+ EXE if Inno Setup is installed).
+# Publishes the app and builds the EXE installer (Inno Setup required).
 pwsh ./tools/windows/build-installers.ps1 -Configuration Release
 ```
 
-Outputs land in `dist/windows/`: the published app under `publish/`, the MSI under `msi/`, and the Inno Setup `.exe` under `setup/`. The app project is `Windows/UltimateFileConverter.WinUI/UltimateFileConverter.WinUI.csproj` (opened via `ULTIMATE-FILE-CONVERTER.sln`); the installer sources are `tools/windows/installer/Product.wxs` (WiX) and `tools/windows/installer/setup.iss` (Inno Setup). Regenerate the Windows icon from the existing renders with `python tools/windows/build-ico.py`.
+Outputs land in `dist/windows/`: the published app under `publish/` and the Inno Setup `.exe` under `setup/`. The app project is `Windows/UltimateFileConverter.WinUI/UltimateFileConverter.WinUI.csproj` (opened via `ULTIMATE-FILE-CONVERTER.sln`); the installer script is `tools/windows/installer/setup.iss`. Regenerate the Windows icon from the existing renders with `python tools/windows/build-ico.py`.
 
 ## Architecture
 
 - **SwiftUI** front-end, macOS 13+ minimum deployment.
-- **WinUI 3 / C#** front-end for Windows 10 2004+ and Windows 11, built as an unpackaged Windows App SDK app for `.exe` and `.msi` distribution.
+- **WinUI 3 / C#** front-end for Windows 10 22H2+ and Windows 11, built as an unpackaged Windows App SDK app distributed as an Inno Setup `.exe`.
 - **`ConversionRouter`** maps `(FileKind source, FileKind target, ConversionSettings)` to a sequence of CLI invocations (`ConversionStep[]`). The Windows router mirrors the macOS one branch-for-branch, so both platforms agree on which targets are valid for a given source. It supports multi-step pipelines (e.g.&nbsp;Experimental mode renders raw bytes to an intermediate PNG via ffmpeg, then transcodes to the final image format via magick).
 - **`ToolRunner`** executes each step via Foundation&rsquo;s `Process` on macOS and `System.Diagnostics.Process` on Windows, with cancellation that terminates the child process (and its tree on Windows).
 - **`AppViewModel`** (macOS) / **`MainViewModel`** (Windows) owns the queue, settings, and persistent history. macOS persists settings in `UserDefaults` and history as JSON in `~/Library/Application Support/ULTIMATE-FILE-CONVERTER/`; Windows persists both as JSON in `%LOCALAPPDATA%\ULTIMATE-FILE-CONVERTER\`.
-- **Tools are not bundled.** macOS calls bundled/Homebrew-installed tools depending on build mode. Windows uses winget on first run to install FFmpeg, ImageMagick, Ghostscript, Pandoc, and LibreOffice, avoiding third-party binary redistribution inside the app installer.
+- **Tools are not bundled on Windows.** macOS bundles tools inside the `.app`. Windows uses winget on first run to install FFmpeg, ImageMagick, MuPDF, Pandoc, LibreOffice, and 7-Zip, avoiding third-party binary redistribution inside the installer.
 
 ## What does the heavy lifting
 

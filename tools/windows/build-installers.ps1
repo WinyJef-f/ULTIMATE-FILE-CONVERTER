@@ -4,12 +4,10 @@
 
 .DESCRIPTION
     1. Publishes the WinUI app as a self-contained, unpackaged win-x64 app.
-    2. Builds an MSI with the WiX toolset (installed automatically as a .NET tool).
-    3. Builds an EXE installer with Inno Setup 6 when ISCC.exe is available.
+    2. Builds an EXE installer with Inno Setup 6.
 
     Outputs land in dist/windows/:
         publish/                                              the published app
-        msi/ULTIMATE-FILE-CONVERTER-<version>-x64.msi         Windows Installer package
         setup/ULTIMATE-FILE-CONVERTER-Setup-<version>-x64.exe Inno Setup installer
 
 .EXAMPLE
@@ -30,11 +28,10 @@ $IconFile     = Join-Path $RepoRoot "Windows\UltimateFileConverter.WinUI\Assets\
 $InstallerSrc = Join-Path $PSScriptRoot "installer"
 $DistRoot     = Join-Path $RepoRoot "dist\windows"
 $PublishDir   = Join-Path $DistRoot "publish"
-$MsiDir       = Join-Path $DistRoot "msi"
 $SetupDir     = Join-Path $DistRoot "setup"
 
 if (Test-Path $PublishDir) { Remove-Item $PublishDir -Recurse -Force }
-New-Item -ItemType Directory -Force -Path $PublishDir, $MsiDir, $SetupDir | Out-Null
+New-Item -ItemType Directory -Force -Path $PublishDir, $SetupDir | Out-Null
 
 # --------------------------------------------------------------------------
 # Build with MSBuild from Visual Studio, not `dotnet`: WinUI 3 needs the
@@ -111,28 +108,6 @@ if (-not (Test-Path (Join-Path $PublishDir $PriName))) {
 Write-Host "    Published to $PublishDir"
 
 # --------------------------------------------------------------------------
-Write-Host "==> Building MSI with WiX..."
-# Pin to WiX v5: it has the <Files> directory-harvesting element used by Product.wxs
-# (added in v5, absent in v4) but predates the Open Source Maintenance Fee EULA gate
-# that v6+ enforce (WIX7015) - so the MSI builds with no EULA acceptance required.
-if (-not (Get-Command wix.exe -ErrorAction SilentlyContinue)) {
-    Write-Host "    Installing WiX v5 as a global .NET tool..."
-    dotnet tool install --global wix --version "5.0.2" | Out-Null
-    $env:PATH = "$env:USERPROFILE\.dotnet\tools;$env:PATH"
-}
-
-# The .wxs reads these as $(env.*), which is portable across WiX v4/v5/v6.
-$env:UFC_VERSION    = $Version
-$env:UFC_PUBLISHDIR = $PublishDir
-$env:UFC_ICONFILE   = $IconFile
-
-$Wxs     = Join-Path $InstallerSrc "Product.wxs"
-$MsiPath = Join-Path $MsiDir "ULTIMATE-FILE-CONVERTER-$Version-x64.msi"
-wix build $Wxs -arch x64 -o $MsiPath
-if ($LASTEXITCODE -ne 0) { throw "wix build failed." }
-Write-Host "    MSI:  $MsiPath"
-
-# --------------------------------------------------------------------------
 Write-Host "==> Building EXE installer with Inno Setup..."
 $Iscc = $null
 $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
@@ -155,5 +130,5 @@ if ($Iscc) {
 # --------------------------------------------------------------------------
 Write-Host ""
 Write-Host "==> Done. Artifacts under $DistRoot"
-Get-ChildItem -Path $MsiDir, $SetupDir -File -ErrorAction SilentlyContinue |
+Get-ChildItem -Path $SetupDir -File -ErrorAction SilentlyContinue |
     ForEach-Object { Write-Host ("    {0}  ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB)) }
