@@ -52,6 +52,26 @@ jobs:
             *>&1 | Tee-Object -FilePath build.log -Append
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Verify self-contained output
+        if: success()
+        shell: pwsh
+        run: |
+          $pub = "$env:GITHUB_WORKSPACE\publish"
+          $need = @(
+            "UltimateFileConverter.WinUI.exe",
+            "Microsoft.ui.xaml.dll",
+            "Microsoft.WindowsAppRuntime.Bootstrap.dll",
+            "coreclr.dll"
+          )
+          $missing = @($need | Where-Object { -not (Test-Path (Join-Path $pub $_)) })
+          $count = (Get-ChildItem $pub -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
+          "Publish output: $count files" | Tee-Object -FilePath build.log -Append
+          if ($missing.Count -gt 0) {
+            "error : self-contained runtime incomplete; missing: $($missing -join ', ')" | Tee-Object -FilePath build.log -Append
+            exit 1
+          }
+          "Self-contained runtime looks complete." | Tee-Object -FilePath build.log -Append
+
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
