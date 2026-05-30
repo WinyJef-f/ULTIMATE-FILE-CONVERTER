@@ -10,7 +10,8 @@ name: Release v1.0.1
 #
 # Runs only when a push to a claude/** branch carries "[release]" in its commit message
 # (so ordinary commits don't rebuild/re-upload the release), or via the Actions
-# "Run workflow" button.
+# "Run workflow" button. On build failure each job posts the log tail to the PR so the
+# error is visible without the (auth-gated) Actions log.
 
 on:
   push:
@@ -21,6 +22,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 env:
   UFC_VERSION: "1.0.1"
@@ -45,15 +47,29 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Install Inno Setup (for the EXE installer)
-        shell: pwsh
-        run: choco install innosetup -y --no-progress
-
       - name: Build installers (MSI + EXE)
         shell: pwsh
-        run: ./tools/windows/build-installers.ps1 -Version $env:UFC_VERSION
+        run: |
+          choco install innosetup -y --no-progress *>&1 | Tee-Object -FilePath build.log
+          ./tools/windows/build-installers.ps1 -Version $env:UFC_VERSION *>&1 | Tee-Object -FilePath build.log -Append
+
+      - name: Report Windows failure to PR
+        if: failure()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          $tail = if (Test-Path build.log) { (Get-Content build.log -Tail 90) -join "`n" } else { "(no build.log)" }
+          $body = "### :x: Windows release build failed`n`n"
+          $body += "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`n`n"
+          $body += "``````n$tail`n```````n`n<!-- release-windows-status -->"
+          $body | Out-File body.md -Encoding utf8
+          $num = gh pr list --head "$env:BRANCH" --state open --json number --jq '.[0].number'
+          if ($num) { gh pr comment $num --body-file body.md }
 
       - name: Upload Windows installers
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: windows-installers
@@ -61,6 +77,14 @@ jobs:
             dist/windows/msi/*.msi
             dist/windows/setup/*.exe
           if-no-files-found: error
+
+      - name: Upload Windows build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-log
+          path: build.log
+          if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
   macos:
@@ -70,23 +94,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install build tools (xcodegen, dylibbundler, ffmpeg, pandoc)
-        run: brew install xcodegen dylibbundler ffmpeg pandoc
-
-      - name: Install LibreOffice (bundled into the .app)
-        run: brew install --cask libreoffice
-
       - name: Build DMG
         run: |
+          set -o pipefail
           chmod +x tools/*.sh
-          ./tools/build-installer.sh
+          {
+            echo "=== brew install build tools ==="
+            brew install xcodegen dylibbundler ffmpeg pandoc
+            echo "=== brew install --cask libreoffice ==="
+            brew install --cask libreoffice
+            echo "=== build-installer.sh ==="
+            ./tools/build-installer.sh
+          } 2>&1 | tee macos.log
+
+      - name: Report macOS failure to PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          {
+            echo "### :x: macOS release build failed"
+            echo
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo '```'
+            tail -n 120 macos.log 2>/dev/null || echo "(no macos.log)"
+            echo '```'
+            echo
+            echo "<!-- release-macos-status -->"
+          } > body.md
+          num=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -n "$num" ]; then gh pr comment "$num" --body-file body.md; fi
 
       - name: Upload macOS DMG
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
           path: dist/*.dmg
           if-no-files-found: error
+
+      - name: Upload macOS build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build-log
+          path: macos.log
+          if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
   publish:
