@@ -51,4 +51,21 @@
     </Content>
   </ItemGroup>
 
+  <!-- WinUI 3 WindowsPackageType=None publish omits resources.pri (compiled XAML XBF).
+       Without it LoadComponent throws XamlParseException 0x802B000A. Try three candidate
+       locations in order; whichever exists wins (first two are the WASDK staging dirs,
+       third is the regular build output). -->
+  <Target Name="PublishAppResourcesPri" AfterTargets="Publish"
+          Condition="'$(PublishDir)' != ''">
+    <Copy SourceFiles="$(IntermediateOutputPath)resources.pri"
+          DestinationFolder="$(PublishDir)" OverwriteReadOnlyFiles="true"
+          Condition="Exists('$(IntermediateOutputPath)resources.pri')" />
+    <Copy SourceFiles="$(IntermediateOutputPath)MsixContent\resources.pri"
+          DestinationFolder="$(PublishDir)" OverwriteReadOnlyFiles="true"
+          Condition="Exists('$(IntermediateOutputPath)MsixContent\resources.pri')" />
+    <Copy SourceFiles="$(OutDir)resources.pri"
+          DestinationFolder="$(PublishDir)" OverwriteReadOnlyFiles="true"
+          Condition="Exists('$(OutDir)resources.pri')" />
+  </Target>
+
 </Project>
