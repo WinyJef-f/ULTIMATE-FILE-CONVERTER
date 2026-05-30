@@ -1,0 +1,11 @@
+<Project>
+  <!--
+    Redirect MSBuild's intermediate output (obj/) to %TEMP% so builds from deep clone paths
+    (e.g. a doubled-folder ZIP extraction) don't trip Windows MAX_PATH (260 chars).
+    Only BaseIntermediateOutputPath is redirected; the publish output is still controlled by
+    the explicit /p:PublishDir=... flag in build-installers.ps1 and is unaffected.
+  -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(TEMP)\ufc-obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>
