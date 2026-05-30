@@ -17,7 +17,7 @@
 #>
 param(
     [string]$Configuration = "Release",
-    [string]$Version = "1.0.2",
+    [string]$Version = "1.0.1",
     [string]$Runtime = "win-x64",
     [string]$Platform = "x64"
 )
@@ -65,6 +65,20 @@ Write-Host "==> Restoring ($MSBuild)..."
     /p:WindowsAppSDKSelfContained=true
 if ($LASTEXITCODE -ne 0) { throw "Restore failed." }
 
+# Explicit Build before Publish: this is the pass that compiles XAML → XBF and runs MakePri,
+# producing $(AssemblyName).pri in the canonical bin dir. /t:Publish with an explicit PublishDir
+# redirects intermediate output and, on its own, can leave the app PRI out of the publish folder.
+Write-Host "==> Building WinUI app ($Runtime)..."
+& $MSBuild $Project /t:Build `
+    /p:Configuration=$Configuration `
+    /p:Platform=$Platform `
+    /p:RuntimeIdentifier=$Runtime `
+    /p:SelfContained=true `
+    /p:WindowsPackageType=None `
+    /p:WindowsAppSDKSelfContained=true `
+    /p:Version=$Version
+if ($LASTEXITCODE -ne 0) { throw "Build failed." }
+
 Write-Host "==> Publishing WinUI app (self-contained, unpackaged, $Runtime)..."
 # Forward slash on PublishDir avoids the trailing-backslash-inside-quotes arg-escaping bug.
 & $MSBuild $Project /t:Publish `
@@ -80,6 +94,20 @@ if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
 
 $AppExe = Join-Path $PublishDir "UltimateFileConverter.WinUI.exe"
 if (-not (Test-Path $AppExe)) { throw "Publish did not produce $AppExe" }
+
+# Safety net: ensure the app PRI (compiled XAML) is in the publish folder. Without it the app
+# starts but throws XamlParseException 0x802B000A on the first LoadComponent call. The csproj
+# AfterTargets hook normally copies it; if it didn't, pull it from the bin output of the Build above.
+$PriName = "UltimateFileConverter.WinUI.pri"
+if (-not (Test-Path (Join-Path $PublishDir $PriName))) {
+    $BinPri = Join-Path $RepoRoot "Windows\UltimateFileConverter.WinUI\bin\$Platform\$Configuration\net8.0-windows10.0.19041.0\$Runtime\$PriName"
+    if (Test-Path $BinPri) {
+        Copy-Item $BinPri (Join-Path $PublishDir $PriName) -Force
+        Write-Host "    Copied $PriName into publish folder."
+    } else {
+        throw "Required $PriName not found in publish folder or bin output ($BinPri)."
+    }
+}
 Write-Host "    Published to $PublishDir"
 
 # --------------------------------------------------------------------------

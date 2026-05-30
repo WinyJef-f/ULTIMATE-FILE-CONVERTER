@@ -1,10 +1,10 @@
 ; Inno Setup script for the ULTIMATE-FILE-CONVERTER EXE installer.
 ; Values are supplied on the command line by tools/windows/build-installers.ps1:
-;   ISCC.exe /DAppVersion=1.0.2 /DPublishDir=<publish> /DIconFile=<app.ico> /O<outdir> setup.iss
+;   ISCC.exe /DAppVersion=1.0.1 /DPublishDir=<publish> /DIconFile=<app.ico> /O<outdir> setup.iss
 ; Sensible defaults are provided so the script can also be opened directly in the Inno IDE.
 
 #ifndef AppVersion
-  #define AppVersion "1.0.2"
+  #define AppVersion "1.0.1"
 #endif
 #ifndef PublishDir
   #define PublishDir "..\..\..\dist\windows\publish"

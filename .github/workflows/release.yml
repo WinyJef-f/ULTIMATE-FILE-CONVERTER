@@ -1,0 +1,114 @@
+name: Release v1.0.1
+
+# Builds the shipping artifacts on their native runners and attaches them to the
+# existing v1.0.1 GitHub release:
+#   - macOS:   ULTIMATE-FILE-CONVERTER-1.0.1.dmg  (rebuilt; replaces the existing asset)
+#   - Windows: ULTIMATE-FILE-CONVERTER-1.0.1-x64.msi  +  ...-Setup-1.0.1-x64.exe
+#
+# Assets are uploaded with `gh release upload --clobber`, which adds/replaces files on the
+# release WITHOUT modifying its tag, title, or notes. Trigger by pushing a `release-*` tag
+# (so the build uses that commit's code) or via the Actions "Run workflow" button.
+
+on:
+  push:
+    tags:
+      - "release-*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  UFC_VERSION: "1.0.1"
+  RELEASE_TAG: "v1.0.1"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install Inno Setup (for the EXE installer)
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installers (MSI + EXE)
+        shell: pwsh
+        run: ./tools/windows/build-installers.ps1 -Version $env:UFC_VERSION
+
+      - name: Upload Windows installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installers
+          path: |
+            dist/windows/msi/*.msi
+            dist/windows/setup/*.exe
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  macos:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools (xcodegen, dylibbundler, ffmpeg, pandoc)
+        run: brew install xcodegen dylibbundler ffmpeg pandoc
+
+      - name: Install LibreOffice (bundled into the .app)
+        run: brew install --cask libreoffice
+
+      - name: Build DMG
+        run: |
+          chmod +x tools/*.sh
+          ./tools/build-installer.sh
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist/*.dmg
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  publish:
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows installers
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installers
+          path: artifacts/windows
+
+      - name: Download macOS DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-dmg
+          path: artifacts/macos
+
+      - name: List downloaded artifacts
+        run: find artifacts -type f -printf '%p  (%s bytes)\n'
+
+      - name: Upload assets to the v1.0.1 release (replace DMG, add Windows installers)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # --clobber replaces same-named assets (the DMG) and adds new ones (MSI/EXE)
+          # without touching the release tag, title, or body.
+          gh release upload "$RELEASE_TAG" \
+            artifacts/macos/*.dmg \
+            artifacts/windows/msi/*.msi \
+            artifacts/windows/setup/*.exe \
+            --clobber
