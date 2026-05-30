@@ -54,8 +54,6 @@ public sealed partial class MainWindow : Window
             {
                 presenter.IsResizable = true;
                 presenter.IsMaximizable = true;
-                presenter.PreferredMinimumWidth = (int)(640 * scale);
-                presenter.PreferredMinimumHeight = (int)(520 * scale);
             }
         }
         catch
