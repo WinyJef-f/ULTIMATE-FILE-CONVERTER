@@ -1,0 +1,12 @@
+1
+00:00:00,000 --> 00:00:02,500
+Welcome to ULTIMATE-FILE-CONVERTER!
+
+2
+00:00:02,500 --> 00:00:06,000
+Drop this SubRip file in and convert it
+to WebVTT, SSA/ASS, or YouTube SBV.
+
+3
+00:00:06,000 --> 00:00:09,000
+Subtitles convert locally, just like everything else.

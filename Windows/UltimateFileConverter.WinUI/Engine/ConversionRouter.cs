@@ -142,6 +142,14 @@ public static class ConversionRouter
                 inputPath, outputPath);
         }
 
+        // --- Subtitle -> Subtitle ---
+        // ffmpeg handles srt/ass/vtt directly. SBV has poor ffmpeg support, so it is
+        // bridged through SRT in-process (Tool.Subtitle), then ffmpeg reaches ass/vtt.
+        if (src == FileCategory.Subtitle && dst == FileCategory.Subtitle)
+        {
+            return SubtitleRoute(source, target, inputPath, outputPath);
+        }
+
         // --- LibreOffice (soffice) family conversions ---
         var soffice = SofficeRoute(source, target, inputPath, outputPath);
         if (soffice is not null) return soffice;
@@ -173,6 +181,56 @@ public static class ConversionRouter
             .OrderBy(k => k.Category().ToString(), System.StringComparer.Ordinal)
             .ThenBy(k => k.DisplayName(), System.StringComparer.Ordinal)
             .ToArray();
+    }
+
+    /// <summary>
+    /// Builds a subtitle→subtitle plan. srt/ass/vtt go straight through ffmpeg; SBV is
+    /// translated to/from SRT in-process first (ffmpeg's SBV support is unreliable).
+    /// </summary>
+    private static ConversionPlan SubtitleRoute(FileKind source, FileKind target, string inputPath, string outputPath)
+    {
+        // SBV source: SBV → SRT (in-process), then SRT → target via ffmpeg if needed.
+        if (source == FileKind.Sbv)
+        {
+            if (target == FileKind.Srt)
+            {
+                return ConversionPlan.Single(Tool.Subtitle,
+                    new[] { "sbv2srt", "{INPUT}", "{OUTPUT}" },
+                    inputPath, outputPath);
+            }
+            var srt = System.IO.Path.Combine(AppPathsTemp(), $"{System.Guid.NewGuid():N}.srt");
+            return new ConversionPlan(
+                new ConversionStep(Tool.Subtitle,
+                    new[] { "sbv2srt", "{INPUT}", "{OUTPUT}" },
+                    inputPath, srt),
+                new ConversionStep(Tool.Ffmpeg,
+                    new[] { "-y", "-i", "{INPUT}", "{OUTPUT}" },
+                    srt, outputPath));
+        }
+
+        // SBV target: source → SRT via ffmpeg if needed, then SRT → SBV (in-process).
+        if (target == FileKind.Sbv)
+        {
+            if (source == FileKind.Srt)
+            {
+                return ConversionPlan.Single(Tool.Subtitle,
+                    new[] { "srt2sbv", "{INPUT}", "{OUTPUT}" },
+                    inputPath, outputPath);
+            }
+            var srt = System.IO.Path.Combine(AppPathsTemp(), $"{System.Guid.NewGuid():N}.srt");
+            return new ConversionPlan(
+                new ConversionStep(Tool.Ffmpeg,
+                    new[] { "-y", "-i", "{INPUT}", "{OUTPUT}" },
+                    inputPath, srt),
+                new ConversionStep(Tool.Subtitle,
+                    new[] { "srt2sbv", "{INPUT}", "{OUTPUT}" },
+                    srt, outputPath));
+        }
+
+        // srt ⇄ ass ⇄ vtt: direct ffmpeg.
+        return ConversionPlan.Single(Tool.Ffmpeg,
+            new[] { "-y", "-i", "{INPUT}", "{OUTPUT}" },
+            inputPath, outputPath);
     }
 
     private static ConversionPlan? SofficeRoute(FileKind source, FileKind target, string inputPath, string outputPath)

@@ -2,10 +2,10 @@ namespace UltimateFileConverter.WinUI.Engine;
 
 /// <summary>
 /// The external command-line tools the router can dispatch to, plus the in-process
-/// <see cref="Copy"/> sentinel used by Experimental mode. Windows analogue of the
-/// macOS <c>Tool</c> enum — there is no <c>native</c> case because raster image, SVG,
-/// and PDF rasterization are handled by ImageMagick (<see cref="Magick"/>) rather than
-/// platform frameworks.
+/// sentinels <see cref="Copy"/> (Experimental-mode file copy) and <see cref="Subtitle"/>
+/// (SBV ⇄ SRT bridge). Windows analogue of the macOS <c>Tool</c> enum — there is no
+/// <c>native</c> case because raster image, SVG, and PDF rasterization are handled by
+/// ImageMagick (<see cref="Magick"/>) rather than platform frameworks.
 /// </summary>
 public enum Tool
 {
@@ -15,6 +15,7 @@ public enum Tool
     Pandoc,
     Soffice,
     Copy,
+    Subtitle,
 }
 
 public static class ToolExtensions
@@ -28,6 +29,7 @@ public static class ToolExtensions
         Tool.Pandoc => "pandoc.exe",
         Tool.Soffice => "soffice.exe",
         Tool.Copy => "<copy>",
+        Tool.Subtitle => "<subtitle>",
         _ => throw new System.ArgumentOutOfRangeException(nameof(tool), tool, null),
     };
 
@@ -40,6 +42,7 @@ public static class ToolExtensions
         Tool.Pandoc => "Pandoc",
         Tool.Soffice => "LibreOffice",
         Tool.Copy => "file copy",
+        Tool.Subtitle => "subtitle converter",
         _ => tool.ToString(),
     };
 

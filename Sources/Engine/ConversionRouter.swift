@@ -178,6 +178,14 @@ enum ConversionRouter {
             )
         }
 
+        // --- Subtitle -> Subtitle ---
+        // ffmpeg handles srt/ass/vtt directly. SBV has poor ffmpeg support, so it is
+        // bridged through SRT in-process (the .native tool), then ffmpeg reaches ass/vtt.
+        if src == .subtitle && dst == .subtitle {
+            return subtitleRoute(source: source, target: target,
+                                 inputURL: inputURL, outputURL: outputURL)
+        }
+
         // --- LibreOffice (soffice) family conversions ---
         if let plan = sofficeRoute(source: source, target: target,
                                     inputURL: inputURL, outputURL: outputURL) {
@@ -214,6 +222,60 @@ enum ConversionRouter {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let name = UUID().uuidString + "." + ext
         return dir.appendingPathComponent(name)
+    }
+
+    // MARK: - subtitle routing
+
+    /// Builds a subtitle→subtitle plan. srt/ass/vtt go straight through ffmpeg; SBV is
+    /// translated to/from SRT in-process first (ffmpeg's SBV support is unreliable).
+    private static func subtitleRoute(source: FileKind, target: FileKind,
+                                      inputURL: URL, outputURL: URL) -> ConversionPlan {
+        // SBV source: SBV → SRT (native), then SRT → target via ffmpeg if needed.
+        if source == .sbv {
+            if target == .srt {
+                return ConversionPlan(
+                    tool: .native,
+                    arguments: ["sbv2srt", "{INPUT}", "{OUTPUT}"],
+                    input: inputURL, output: outputURL
+                )
+            }
+            let srt = intermediateURL(for: inputURL, extension: "srt")
+            return ConversionPlan(steps: [
+                ConversionStep(tool: .native,
+                               argumentTemplate: ["sbv2srt", "{INPUT}", "{OUTPUT}"],
+                               inputURL: inputURL, outputURL: srt),
+                ConversionStep(tool: .ffmpeg,
+                               argumentTemplate: ["-y", "-i", "{INPUT}", "{OUTPUT}"],
+                               inputURL: srt, outputURL: outputURL)
+            ])
+        }
+
+        // SBV target: source → SRT via ffmpeg if needed, then SRT → SBV (native).
+        if target == .sbv {
+            if source == .srt {
+                return ConversionPlan(
+                    tool: .native,
+                    arguments: ["srt2sbv", "{INPUT}", "{OUTPUT}"],
+                    input: inputURL, output: outputURL
+                )
+            }
+            let srt = intermediateURL(for: inputURL, extension: "srt")
+            return ConversionPlan(steps: [
+                ConversionStep(tool: .ffmpeg,
+                               argumentTemplate: ["-y", "-i", "{INPUT}", "{OUTPUT}"],
+                               inputURL: inputURL, outputURL: srt),
+                ConversionStep(tool: .native,
+                               argumentTemplate: ["srt2sbv", "{INPUT}", "{OUTPUT}"],
+                               inputURL: srt, outputURL: outputURL)
+            ])
+        }
+
+        // srt ⇄ ass ⇄ vtt: direct ffmpeg.
+        return ConversionPlan(
+            tool: .ffmpeg,
+            arguments: ["-y", "-i", "{INPUT}", "{OUTPUT}"],
+            input: inputURL, output: outputURL
+        )
     }
 
     // MARK: - soffice family routing
@@ -284,7 +346,7 @@ enum ConversionRouter {
             return rawBytesToAudio(target: target, inputURL: inputURL, outputURL: outputURL)
         case .video:
             return rawBytesToVideo(target: target, inputURL: inputURL, outputURL: outputURL)
-        case .document, .spreadsheet, .presentation:
+        case .document, .spreadsheet, .presentation, .subtitle:
             // No "raw decode" makes sense for these — just copy bytes with the new extension.
             return ConversionPlan(
                 tool: .cp,

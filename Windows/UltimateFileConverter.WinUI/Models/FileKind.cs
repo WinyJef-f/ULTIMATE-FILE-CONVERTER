@@ -9,6 +9,7 @@ public enum FileCategory
     Document,
     Spreadsheet,
     Presentation,
+    Subtitle,
 }
 
 /// <summary>
@@ -30,6 +31,8 @@ public enum FileKind
     Xlsx, Ods, Csv,
     // Presentation
     Pptx, Odp,
+    // Subtitle
+    Srt, Ass, Vtt, Sbv,
 }
 
 /// <summary>
@@ -55,6 +58,7 @@ public static class Formats
             or FileKind.Html or FileKind.Md or FileKind.Epub or FileKind.Txt or FileKind.Tex => FileCategory.Document,
         FileKind.Xlsx or FileKind.Ods or FileKind.Csv => FileCategory.Spreadsheet,
         FileKind.Pptx or FileKind.Odp => FileCategory.Presentation,
+        FileKind.Srt or FileKind.Ass or FileKind.Vtt or FileKind.Sbv => FileCategory.Subtitle,
         _ => FileCategory.Document,
     };
 
@@ -98,6 +102,10 @@ public static class Formats
         FileKind.Csv => "CSV",
         FileKind.Pptx => "PowerPoint (.pptx)",
         FileKind.Odp => "OpenDocument Pres.",
+        FileKind.Srt => "SubRip",
+        FileKind.Ass => "SSA/ASS",
+        FileKind.Vtt => "WebVTT",
+        FileKind.Sbv => "YouTube SBV",
         _ => kind.ToString().ToUpperInvariant(),
     };
 
@@ -142,6 +150,10 @@ public static class Formats
         FileKind.Csv => new[] { "csv" },
         FileKind.Pptx => new[] { "pptx" },
         FileKind.Odp => new[] { "odp" },
+        FileKind.Srt => new[] { "srt" },
+        FileKind.Ass => new[] { "ass", "ssa" },
+        FileKind.Vtt => new[] { "vtt" },
+        FileKind.Sbv => new[] { "sbv" },
         _ => new[] { kind.ToString().ToLowerInvariant() },
     };
 
@@ -169,6 +181,7 @@ public static class Formats
         FileCategory.Document => "Document",
         FileCategory.Spreadsheet => "Spreadsheet",
         FileCategory.Presentation => "Presentation",
+        FileCategory.Subtitle => "Subtitle",
         _ => category.ToString(),
     };
 
@@ -181,6 +194,7 @@ public static class Formats
         FileCategory.Document => "\uE8A5",     // Document
         FileCategory.Spreadsheet => "\uE8A5",  // Document (shared)
         FileCategory.Presentation => "\uE786", // Slideshow
+        FileCategory.Subtitle => "\uE7F0",     // ClosedCaption
         _ => "\uE8A5",
     };
 }

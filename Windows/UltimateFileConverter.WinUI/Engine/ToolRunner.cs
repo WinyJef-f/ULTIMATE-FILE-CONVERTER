@@ -47,6 +47,15 @@ public static class ToolRunner
                 continue;
             }
 
+            // SBV ⇄ SRT bridge is handled in-process — no subprocess.
+            if (step.Tool == Tool.Subtitle)
+            {
+                SubtitleConverter.Run(step.ResolveArguments());
+                last = new ProcessResult(0, string.Empty, string.Empty);
+                cancellationToken.ThrowIfCancellationRequested();
+                continue;
+            }
+
             var executable = ResolveExecutable(step.Tool) ?? throw new ToolNotFoundException(step.Tool);
             last = await RunAsync(executable, step.ResolveArguments(), cancellationToken).ConfigureAwait(false);
             if (!last.Success) return last;
@@ -101,7 +110,8 @@ public static class ToolRunner
         return new ProcessResult(process.ExitCode, stdout, stderr);
     }
 
-    public static bool IsAvailable(Tool tool) => tool == Tool.Copy || ResolveExecutable(tool) is not null;
+    public static bool IsAvailable(Tool tool) =>
+        tool is Tool.Copy or Tool.Subtitle || ResolveExecutable(tool) is not null;
 
     /// <summary>
     /// Locates a tool's executable. Search order: process cache, PATH, the winget shim
@@ -111,6 +121,7 @@ public static class ToolRunner
     public static string? ResolveExecutable(Tool tool)
     {
         if (tool == Tool.Copy) return "<copy>";
+        if (tool == Tool.Subtitle) return "<subtitle>";
         if (ResolvedCache.TryGetValue(tool, out var cached) && System.IO.File.Exists(cached)) return cached;
 
         var exe = tool.ExecutableName();

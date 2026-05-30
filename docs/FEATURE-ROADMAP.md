@@ -39,7 +39,7 @@ When a stage introduces a new format or category, touch all of these to keep par
 
 ---
 
-## Stage 1 — Conversion stats dashboard  *(easiest)*
+## Stage 1 — Conversion stats dashboard  *(easiest)*  ✅ Shipped
 
 **What:** A dashboard showing files converted, total bytes processed, and most-used
 formats/pairs, persistent across sessions.
@@ -57,9 +57,17 @@ persisted on both platforms — this is aggregation + a new view.
 - **Risk:** low. Main subtlety is back-compatible history JSON and counting reruns of the
   same file correctly.
 
-## Stage 2 — Subtitle conversion: SRT ↔ ASS ↔ VTT ↔ SBV
+## Stage 2 — Subtitle conversion: SRT ↔ ASS ↔ VTT ↔ SBV  ✅ Shipped
 
 **What:** A new `subtitle` category converting between SubRip, SSA/ASS, WebVTT, and SBV.
+
+**How it shipped:** New `FileCategory.subtitle` and `FileKind`s `srt`/`ass`/`vtt`/`sbv` on both
+platforms. The router's `subtitle → subtitle` branch runs srt/ass/vtt straight through
+`ffmpeg -y -i {INPUT} {OUTPUT}`; SBV is bridged through SRT by an in-process converter
+(`SubtitleConverter`, dispatched via the macOS `.native` tool and the Windows `Tool.Subtitle`
+sentinel), so SBV→SRT→{ass,vtt} and {ass,vtt}→SRT→SBV work without relying on ffmpeg's weak
+SBV support. No new external dependency. Demo files `samples/hello.srt` and `samples/hello.sbv`
+were added.
 
 **Why early:** FFmpeg (already bundled/installed on both platforms) converts srt/ass/vtt
 directly — no new dependency for three of the four formats.

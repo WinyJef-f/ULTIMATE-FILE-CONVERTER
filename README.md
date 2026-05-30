@@ -16,7 +16,7 @@ A universal desktop app for converting files between dozens of formats &mdash; *
 ## Features
 
 - **Drag-and-drop batch conversion.** Drop one file or fifty.
-- **30+ formats** across images, audio, video, documents, spreadsheets, presentations.
+- **30+ formats** across images, audio, video, documents, spreadsheets, presentations, subtitles.
 - **Smart routing.** The app picks the right tool for each (source, target) pair automatically.
 - **Persistent history** of past conversions, survives across launches.
 - **Configurable quality** &mdash; image quality, audio bitrate, video CRF, output folder.
@@ -54,6 +54,7 @@ The app is not notarized, so on first launch macOS may show a Gatekeeper warning
 | Documents | PDF, DOCX, DOC, ODT, RTF, HTML, Markdown, EPUB, TXT, LaTeX |
 | Spreadsheets | XLSX, ODS, CSV |
 | Presentations | PPTX, ODP |
+| Subtitles | SRT, ASS/SSA, WebVTT, SBV |
 
 With Experimental mode on, every category can be coerced into every other category via raw-byte reinterpretation.
 

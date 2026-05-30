@@ -1,7 +1,7 @@
 import Foundation
 
 enum FileCategory: String, CaseIterable, Hashable {
-    case image, audio, video, document, spreadsheet, presentation
+    case image, audio, video, document, spreadsheet, presentation, subtitle
 
     var displayName: String {
         switch self {
@@ -11,6 +11,7 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .document: return "Document"
         case .spreadsheet: return "Spreadsheet"
         case .presentation: return "Presentation"
+        case .subtitle: return "Subtitle"
         }
     }
 
@@ -22,6 +23,7 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .document: return "doc.text"
         case .spreadsheet: return "tablecells"
         case .presentation: return "rectangle.on.rectangle"
+        case .subtitle: return "captions.bubble"
         }
     }
 }
@@ -39,6 +41,8 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
     case xlsx, ods, csv
     // Presentation
     case pptx, odp
+    // Subtitle
+    case srt, ass, vtt, sbv
 
     var id: String { rawValue }
 
@@ -50,6 +54,7 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .pdf, .docx, .doc, .odt, .rtf, .html, .md, .epub, .txt, .tex: return .document
         case .xlsx, .ods, .csv: return .spreadsheet
         case .pptx, .odp: return .presentation
+        case .srt, .ass, .vtt, .sbv: return .subtitle
         }
     }
 
@@ -93,6 +98,10 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .csv: return "CSV"
         case .pptx: return "PowerPoint (.pptx)"
         case .odp: return "OpenDocument Pres."
+        case .srt: return "SubRip"
+        case .ass: return "SSA/ASS"
+        case .vtt: return "WebVTT"
+        case .sbv: return "YouTube SBV"
         }
     }
 
@@ -137,6 +146,10 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .csv: return ["csv"]
         case .pptx: return ["pptx"]
         case .odp: return ["odp"]
+        case .srt: return ["srt"]
+        case .ass: return ["ass", "ssa"]
+        case .vtt: return ["vtt"]
+        case .sbv: return ["sbv"]
         }
     }
 
