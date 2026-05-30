@@ -59,7 +59,10 @@ if (-not $MSBuild) {
 }
 
 Write-Host "==> Restoring ($MSBuild)..."
-& $MSBuild $Project /t:Restore /p:Configuration=$Configuration /p:Platform=$Platform /p:RuntimeIdentifier=$Runtime
+# WindowsAppSDKSelfContained MUST be on the command line: the WASDK targets that pull in
+# Bootstrap.dll / XAML DLLs evaluate this property before the csproj body is fully read.
+& $MSBuild $Project /t:Restore /p:Configuration=$Configuration /p:Platform=$Platform /p:RuntimeIdentifier=$Runtime `
+    /p:WindowsAppSDKSelfContained=true
 if ($LASTEXITCODE -ne 0) { throw "Restore failed." }
 
 Write-Host "==> Publishing WinUI app (self-contained, unpackaged, $Runtime)..."
@@ -70,6 +73,7 @@ Write-Host "==> Publishing WinUI app (self-contained, unpackaged, $Runtime)..."
     /p:RuntimeIdentifier=$Runtime `
     /p:SelfContained=true `
     /p:WindowsPackageType=None `
+    /p:WindowsAppSDKSelfContained=true `
     /p:Version=$Version `
     "/p:PublishDir=$PublishDir/"
 if ($LASTEXITCODE -ne 0) { throw "Publish failed." }

@@ -43,12 +43,17 @@ jobs:
           $proj = "$env:GITHUB_WORKSPACE\Windows\UltimateFileConverter.WinUI\UltimateFileConverter.WinUI.csproj"
           $pub  = "$env:GITHUB_WORKSPACE\publish"
 
+          # WindowsAppSDKSelfContained MUST be passed on the CLI, not only set in the
+          # csproj — the WASDK targets that copy Bootstrap.dll / XAML DLLs evaluate this
+          # property before the project file is fully read.
           msbuild $proj /t:Restore /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64 `
+            /p:WindowsAppSDKSelfContained=true `
             *>&1 | Tee-Object -FilePath build.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           msbuild $proj /t:Publish /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64 `
-            /p:SelfContained=true /p:WindowsPackageType=None "/p:PublishDir=$pub/" `
+            /p:SelfContained=true /p:WindowsPackageType=None /p:WindowsAppSDKSelfContained=true `
+            "/p:PublishDir=$pub/" `
             *>&1 | Tee-Object -FilePath build.log -Append
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -57,13 +62,18 @@ jobs:
         shell: pwsh
         run: |
           $pub = "$env:GITHUB_WORKSPACE\publish"
-          $need = @(
-            "UltimateFileConverter.WinUI.exe",
-            "Microsoft.ui.xaml.dll",
-            "Microsoft.WindowsAppRuntime.Bootstrap.dll",
-            "coreclr.dll"
+          # Bootstrap.dll must be in the root (loaded by the OS before any path is set up).
+          # The other DLLs may land directly in the root or inside a Frameworks\ subdirectory
+          # depending on WASDK version, so search recursively for those.
+          $rootNeeds = @("UltimateFileConverter.WinUI.exe", "Microsoft.WindowsAppRuntime.Bootstrap.dll")
+          $anywhereNeeds = @("Microsoft.ui.xaml.dll", "coreclr.dll")
+
+          $missing = @(
+            $rootNeeds     | Where-Object { -not (Test-Path (Join-Path $pub $_)) }
+            $anywhereNeeds | Where-Object {
+              -not (Get-ChildItem $pub -Recurse -Filter $_ -ErrorAction SilentlyContinue | Select-Object -First 1)
+            }
           )
-          $missing = @($need | Where-Object { -not (Test-Path (Join-Path $pub $_)) })
           $count = (Get-ChildItem $pub -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
           "Publish output: $count files" | Tee-Object -FilePath build.log -Append
           if ($missing.Count -gt 0) {
