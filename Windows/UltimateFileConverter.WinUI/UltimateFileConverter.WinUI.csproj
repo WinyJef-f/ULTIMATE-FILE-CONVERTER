@@ -51,21 +51,22 @@
     </Content>
   </ItemGroup>
 
-  <!-- WinUI 3 WindowsPackageType=None publish omits resources.pri (compiled XAML XBF).
-       Without it LoadComponent throws XamlParseException 0x802B000A. Try three candidate
-       locations in order; whichever exists wins (first two are the WASDK staging dirs,
-       third is the regular build output). -->
+  <!-- For WindowsPackageType=None, WASDK names the app PRI file after the assembly
+       ($(AssemblyName).pri, not resources.pri). /t:Publish redirects $(OutDir) to obj\...
+       and does not include the PRI in its copy list. Use the canonical bin path instead. -->
   <Target Name="PublishAppResourcesPri" AfterTargets="Publish"
           Condition="'$(PublishDir)' != ''">
-    <Copy SourceFiles="$(IntermediateOutputPath)resources.pri"
+    <PropertyGroup>
+      <!-- Reconstruct the bin output path; $(OutDir) is unreliable under /t:Publish. -->
+      <_CanonicalBinPri>$(BaseOutputPath)$(Platform)\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\$(AssemblyName).pri</_CanonicalBinPri>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_CanonicalBinPri)"
           DestinationFolder="$(PublishDir)" OverwriteReadOnlyFiles="true"
-          Condition="Exists('$(IntermediateOutputPath)resources.pri')" />
-    <Copy SourceFiles="$(IntermediateOutputPath)MsixContent\resources.pri"
+          Condition="Exists('$(_CanonicalBinPri)')" />
+    <!-- Fallback: $(OutDir) when it wasn't redirected (e.g. local msbuild /t:Publish). -->
+    <Copy SourceFiles="$(OutDir)$(AssemblyName).pri"
           DestinationFolder="$(PublishDir)" OverwriteReadOnlyFiles="true"
-          Condition="Exists('$(IntermediateOutputPath)MsixContent\resources.pri')" />
-    <Copy SourceFiles="$(OutDir)resources.pri"
-          DestinationFolder="$(PublishDir)" OverwriteReadOnlyFiles="true"
-          Condition="Exists('$(OutDir)resources.pri')" />
+          Condition="!Exists('$(PublishDir)$(AssemblyName).pri') and Exists('$(OutDir)$(AssemblyName).pri')" />
   </Target>
 
 </Project>
