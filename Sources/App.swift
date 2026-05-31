@@ -12,7 +12,7 @@ struct UltimateFileConverterApp: App {
 
     var body: some Scene {
         WindowGroup("ULTIMATE-FILE-CONVERTER") {
-            ContentView(showSettings: $showSettings)
+            ContentView(showSettings: $showSettings, showSetup: $showSetup)
                 .environmentObject(vm)
                 .task { await startup() }
                 .sheet(isPresented: $showSetup) {

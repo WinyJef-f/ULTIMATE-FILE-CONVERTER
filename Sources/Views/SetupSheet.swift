@@ -19,9 +19,9 @@ struct SetupSheet: View {
             // MARK: Header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("First-Run Setup")
+                    Text("Conversion Tools")
                         .font(.title2.weight(.semibold))
-                    Text("Install conversion tools via Homebrew")
+                    Text("Manage conversion tools installed via Homebrew")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

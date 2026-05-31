@@ -4,6 +4,7 @@ import AppKit
 struct ContentView: View {
     @EnvironmentObject var vm: AppViewModel
     @Binding var showSettings: Bool
+    @Binding var showSetup: Bool
     @State private var showDashboard = false
 
     var body: some View {
@@ -184,6 +185,15 @@ struct ContentView: View {
 
         ToolbarItem(placement: .automatic) {
             Button {
+                showSetup = true
+            } label: {
+                Label("Conversion Tools", systemImage: "wrench.and.screwdriver")
+            }
+            .help("View and install conversion tools")
+        }
+
+        ToolbarItem(placement: .automatic) {
+            Button {
                 showSettings = true
             } label: {
                 Label("Settings", systemImage: "gearshape")
@@ -232,6 +242,6 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(showSettings: .constant(false))
+    ContentView(showSettings: .constant(false), showSetup: .constant(false))
         .environmentObject(AppViewModel())
 }
