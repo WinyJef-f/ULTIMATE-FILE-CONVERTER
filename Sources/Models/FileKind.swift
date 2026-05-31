@@ -1,7 +1,7 @@
 import Foundation
 
 enum FileCategory: String, CaseIterable, Hashable {
-    case image, audio, video, document, spreadsheet, presentation, subtitle
+    case image, audio, video, document, spreadsheet, presentation, subtitle, archive
 
     var displayName: String {
         switch self {
@@ -12,6 +12,7 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .spreadsheet: return "Spreadsheet"
         case .presentation: return "Presentation"
         case .subtitle: return "Subtitle"
+        case .archive: return "Archive"
         }
     }
 
@@ -24,6 +25,7 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .spreadsheet: return "tablecells"
         case .presentation: return "rectangle.on.rectangle"
         case .subtitle: return "captions.bubble"
+        case .archive: return "archivebox"
         }
     }
 }
@@ -43,6 +45,8 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
     case pptx, odp
     // Subtitle
     case srt, ass, vtt, sbv
+    // Archive
+    case zip, sevenz = "sevenz", tar, targz = "targz"
 
     var id: String { rawValue }
 
@@ -55,6 +59,7 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .xlsx, .ods, .csv: return .spreadsheet
         case .pptx, .odp: return .presentation
         case .srt, .ass, .vtt, .sbv: return .subtitle
+        case .zip, .sevenz, .tar, .targz: return .archive
         }
     }
 
@@ -102,6 +107,10 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .ass: return "SSA/ASS"
         case .vtt: return "WebVTT"
         case .sbv: return "YouTube SBV"
+        case .zip: return "ZIP"
+        case .sevenz: return "7-Zip"
+        case .tar: return "TAR"
+        case .targz: return "TAR.GZ"
         }
     }
 
@@ -150,11 +159,17 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .ass: return ["ass", "ssa"]
         case .vtt: return ["vtt"]
         case .sbv: return ["sbv"]
+        case .zip: return ["zip"]
+        case .sevenz: return ["7z"]
+        case .tar: return ["tar"]
+        case .targz: return ["tgz", "tar.gz"]
         }
     }
 
     /// Extension used when writing an output file.
     var canonicalExtension: String {
-        recognizedExtensions.first ?? rawValue
+        // targz uses "tar.gz" (compound) as its canonical output extension rather than "tgz".
+        if self == .targz { return "tar.gz" }
+        return recognizedExtensions.first ?? rawValue
     }
 }

@@ -186,6 +186,14 @@ enum ConversionRouter {
                                  inputURL: inputURL, outputURL: outputURL)
         }
 
+        // --- Archive -> Archive via 7-Zip ---
+        // All conversions go through a temp extract-then-recompress pipeline.
+        // tar.gz targets need an extra step: create a .tar first, then gzip it.
+        if src == .archive && dst == .archive {
+            return archiveRoute(source: source, target: target,
+                                inputURL: inputURL, outputURL: outputURL)
+        }
+
         // --- LibreOffice (soffice) family conversions ---
         if let plan = sofficeRoute(source: source, target: target,
                                     inputURL: inputURL, outputURL: outputURL) {
@@ -222,6 +230,66 @@ enum ConversionRouter {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let name = UUID().uuidString + "." + ext
         return dir.appendingPathComponent(name)
+    }
+
+    /// Creates and returns a fresh temporary subdirectory for archive extraction.
+    private static func intermediateDir() -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ULTIMATE-FILE-CONVERTER", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    // MARK: - archive routing
+
+    /// Extract-then-recompress pipeline via 7-Zip. All format pairs share the same extract
+    /// step; tar.gz targets need a two-step compress (tar first, then gzip).
+    private static func archiveRoute(source: FileKind, target: FileKind,
+                                     inputURL: URL, outputURL: URL) -> ConversionPlan {
+        let extractDir = intermediateDir()
+        let extractPath = extractDir.path
+
+        // Extract step: 7z x -y {INPUT} -o<extractDir>
+        // The outputURL here is a dummy; the step's args don't use {OUTPUT}.
+        let extractDummy = extractDir.appendingPathComponent(".done")
+        let extractStep = ConversionStep(
+            tool: .sevenZip,
+            argumentTemplate: ["x", "-y", "{INPUT}", "-o\(extractPath)"],
+            inputURL: inputURL,
+            outputURL: extractDummy
+        )
+
+        // tar.gz target: 7z can't create .tar.gz in one pass — create .tar then gzip it.
+        if target == .targz {
+            let tarTemp = intermediateURL(for: outputURL, extension: "tar")
+            return ConversionPlan(steps: [
+                extractStep,
+                ConversionStep(tool: .sevenZip,
+                               argumentTemplate: ["a", "-ttar", "{OUTPUT}", "\(extractPath)/*", "-r"],
+                               inputURL: extractDummy, outputURL: tarTemp),
+                ConversionStep(tool: .sevenZip,
+                               argumentTemplate: ["a", "-tgzip", "{OUTPUT}", "{INPUT}"],
+                               inputURL: tarTemp, outputURL: outputURL)
+            ])
+        }
+
+        let formatFlag = archiveFormatFlag(for: target)
+        return ConversionPlan(steps: [
+            extractStep,
+            ConversionStep(tool: .sevenZip,
+                           argumentTemplate: ["a", formatFlag, "{OUTPUT}", "\(extractPath)/*", "-r"],
+                           inputURL: extractDummy, outputURL: outputURL)
+        ])
+    }
+
+    private static func archiveFormatFlag(for kind: FileKind) -> String {
+        switch kind {
+        case .zip: return "-tzip"
+        case .sevenz: return "-t7z"
+        case .tar: return "-ttar"
+        default: return "-tzip"
+        }
     }
 
     // MARK: - subtitle routing
@@ -346,7 +414,7 @@ enum ConversionRouter {
             return rawBytesToAudio(target: target, inputURL: inputURL, outputURL: outputURL)
         case .video:
             return rawBytesToVideo(target: target, inputURL: inputURL, outputURL: outputURL)
-        case .document, .spreadsheet, .presentation, .subtitle:
+        case .document, .spreadsheet, .presentation, .subtitle, .archive:
             // No "raw decode" makes sense for these — just copy bytes with the new extension.
             return ConversionPlan(
                 tool: .cp,

@@ -13,3 +13,4 @@ contents genuinely match its extension — regenerate them with `python3 tools/m
 | `hello.md` | Markdown document | Document | HTML, DOCX, EPUB, PDF, RTF |
 | `hello.srt` | SubRip subtitles | Subtitle | WebVTT, SSA/ASS, YouTube SBV |
 | `hello.sbv` | YouTube SBV subtitles | Subtitle | SubRip, WebVTT, SSA/ASS |
+| `hello.zip` | ZIP archive (3 text files) | Archive | 7-Zip, TAR, TAR.GZ |

@@ -358,8 +358,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
         var dir = _settings.HasUsableCustomFolder
             ? _settings.CustomOutputFolderPath!
             : System.IO.Path.GetDirectoryName(item.Path) ?? System.IO.Directory.GetCurrentDirectory();
-        var baseName = System.IO.Path.GetFileNameWithoutExtension(item.Path);
+        var baseName = GetBaseName(item.Path);
         return System.IO.Path.Combine(dir, $"{baseName}.{item.TargetKind.CanonicalExtension()}");
+    }
+
+    /// <summary>
+    /// Returns the filename without extension, stripping compound extensions (e.g. .tar.gz)
+    /// so the output is "file.zip" rather than "file.tar.zip".
+    /// </summary>
+    private static string GetBaseName(string path)
+    {
+        var name = System.IO.Path.GetFileName(path);
+        if (name.EndsWith(".tar.gz", System.StringComparison.OrdinalIgnoreCase)) return name[..^7];
+        return System.IO.Path.GetFileNameWithoutExtension(path);
     }
 
     // MARK: - History

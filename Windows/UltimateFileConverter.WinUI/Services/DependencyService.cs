@@ -46,6 +46,9 @@ public sealed class DependencyService
             new Dependency("LibreOffice", "TheDocumentFoundation.LibreOffice", "soffice.exe",
                 new[] { System.IO.Path.Combine(programFiles, "LibreOffice"), System.IO.Path.Combine(programFilesX86, "LibreOffice") },
                 "Office formats and PDF export."),
+            new Dependency("7-Zip", "7zip.7zip", "7z.exe",
+                new[] { System.IO.Path.Combine(programFiles, "7-Zip"), System.IO.Path.Combine(programFilesX86, "7-Zip") },
+                "Archive conversion (ZIP, 7z, TAR, TAR.GZ)."),
         };
     }
 

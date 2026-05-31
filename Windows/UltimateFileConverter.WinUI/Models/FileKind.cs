@@ -10,6 +10,7 @@ public enum FileCategory
     Spreadsheet,
     Presentation,
     Subtitle,
+    Archive,
 }
 
 /// <summary>
@@ -33,6 +34,8 @@ public enum FileKind
     Pptx, Odp,
     // Subtitle
     Srt, Ass, Vtt, Sbv,
+    // Archive
+    Zip, SevenZ, Tar, TarGz,
 }
 
 /// <summary>
@@ -59,6 +62,7 @@ public static class Formats
         FileKind.Xlsx or FileKind.Ods or FileKind.Csv => FileCategory.Spreadsheet,
         FileKind.Pptx or FileKind.Odp => FileCategory.Presentation,
         FileKind.Srt or FileKind.Ass or FileKind.Vtt or FileKind.Sbv => FileCategory.Subtitle,
+        FileKind.Zip or FileKind.SevenZ or FileKind.Tar or FileKind.TarGz => FileCategory.Archive,
         _ => FileCategory.Document,
     };
 
@@ -106,6 +110,10 @@ public static class Formats
         FileKind.Ass => "SSA/ASS",
         FileKind.Vtt => "WebVTT",
         FileKind.Sbv => "YouTube SBV",
+        FileKind.Zip => "ZIP",
+        FileKind.SevenZ => "7-Zip",
+        FileKind.Tar => "TAR",
+        FileKind.TarGz => "TAR.GZ",
         _ => kind.ToString().ToUpperInvariant(),
     };
 
@@ -154,14 +162,26 @@ public static class Formats
         FileKind.Ass => new[] { "ass", "ssa" },
         FileKind.Vtt => new[] { "vtt" },
         FileKind.Sbv => new[] { "sbv" },
+        FileKind.Zip => new[] { "zip" },
+        FileKind.SevenZ => new[] { "7z" },
+        FileKind.Tar => new[] { "tar" },
+        FileKind.TarGz => new[] { "tgz", "tar.gz" },
         _ => new[] { kind.ToString().ToLowerInvariant() },
     };
 
     /// <summary>Extension used when writing an output file.</summary>
-    public static string CanonicalExtension(this FileKind kind) => kind.RecognizedExtensions()[0];
+    public static string CanonicalExtension(this FileKind kind) =>
+        // TarGz uses "tar.gz" (compound) as its canonical output extension rather than "tgz".
+        kind == FileKind.TarGz ? "tar.gz" : kind.RecognizedExtensions()[0];
 
     /// <summary>Stable lower-case identifier (matches the macOS rawValue) used in plans and history.</summary>
-    public static string RawValue(this FileKind kind) => kind.ToString().ToLowerInvariant();
+    public static string RawValue(this FileKind kind) => kind switch
+    {
+        // These don't follow the plain ToString().ToLower() pattern.
+        FileKind.SevenZ => "sevenz",
+        FileKind.TarGz => "targz",
+        _ => kind.ToString().ToLowerInvariant(),
+    };
 
     public static FileKind? FromRawValue(string? raw)
     {
@@ -182,6 +202,7 @@ public static class Formats
         FileCategory.Spreadsheet => "Spreadsheet",
         FileCategory.Presentation => "Presentation",
         FileCategory.Subtitle => "Subtitle",
+        FileCategory.Archive => "Archive",
         _ => category.ToString(),
     };
 
@@ -195,6 +216,7 @@ public static class Formats
         FileCategory.Spreadsheet => "\uE8A5",  // Document (shared)
         FileCategory.Presentation => "\uE786", // Slideshow
         FileCategory.Subtitle => "\uE7F0",     // ClosedCaption
+        FileCategory.Archive => "\uF5ED",      // ZipFolder
         _ => "\uE8A5",
     };
 }

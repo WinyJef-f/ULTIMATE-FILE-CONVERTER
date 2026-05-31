@@ -252,7 +252,14 @@ final class AppViewModel: ObservableObject {
         case .customFolder:
             outputDir = settings.customOutputFolder ?? item.url.deletingLastPathComponent()
         }
-        let baseName = item.url.deletingPathExtension().lastPathComponent
+        let name = item.url.lastPathComponent
+        // Strip compound extensions (e.g., .tar.gz) so the output is "file.zip" not "file.tar.zip".
+        let baseName: String
+        if name.lowercased().hasSuffix(".tar.gz") {
+            baseName = String(name.dropLast(".tar.gz".count))
+        } else {
+            baseName = item.url.deletingPathExtension().lastPathComponent
+        }
         return outputDir
             .appendingPathComponent(baseName)
             .appendingPathExtension(item.targetKind.canonicalExtension)

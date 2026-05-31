@@ -14,6 +14,7 @@ public enum Tool
     Mutool,
     Pandoc,
     Soffice,
+    SevenZip,
     Copy,
     Subtitle,
 }
@@ -28,6 +29,7 @@ public static class ToolExtensions
         Tool.Mutool => "mutool.exe",
         Tool.Pandoc => "pandoc.exe",
         Tool.Soffice => "soffice.exe",
+        Tool.SevenZip => "7z.exe",
         Tool.Copy => "<copy>",
         Tool.Subtitle => "<subtitle>",
         _ => throw new System.ArgumentOutOfRangeException(nameof(tool), tool, null),
@@ -41,6 +43,7 @@ public static class ToolExtensions
         Tool.Mutool => "MuPDF",
         Tool.Pandoc => "Pandoc",
         Tool.Soffice => "LibreOffice",
+        Tool.SevenZip => "7-Zip",
         Tool.Copy => "file copy",
         Tool.Subtitle => "subtitle converter",
         _ => tool.ToString(),
@@ -54,6 +57,7 @@ public static class ToolExtensions
         Tool.Mutool => "ArtifexSoftware.mutool",
         Tool.Pandoc => "JohnMacFarlane.Pandoc",
         Tool.Soffice => "TheDocumentFoundation.LibreOffice",
+        Tool.SevenZip => "7zip.7zip",
         _ => string.Empty,
     };
 }

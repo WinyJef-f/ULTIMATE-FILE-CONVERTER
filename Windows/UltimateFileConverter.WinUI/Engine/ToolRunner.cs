@@ -113,6 +113,8 @@ public static class ToolRunner
     public static bool IsAvailable(Tool tool) =>
         tool is Tool.Copy or Tool.Subtitle || ResolveExecutable(tool) is not null;
 
+    // SevenZip has no special in-process sentinel — fall through to the normal executable lookup.
+
     /// <summary>
     /// Locates a tool's executable. Search order: process cache, PATH, the winget shim
     /// directory, fixed install locations, and finally a bounded recursive scan of the
@@ -120,8 +122,8 @@ public static class ToolRunner
     /// </summary>
     public static string? ResolveExecutable(Tool tool)
     {
-        if (tool == Tool.Copy) return "<copy>";
-        if (tool == Tool.Subtitle) return "<subtitle>";
+        if (tool is Tool.Copy) return "<copy>";
+        if (tool is Tool.Subtitle) return "<subtitle>";
         if (ResolvedCache.TryGetValue(tool, out var cached) && System.IO.File.Exists(cached)) return cached;
 
         var exe = tool.ExecutableName();
@@ -198,6 +200,10 @@ public static class ToolRunner
                 yield return System.IO.Path.Combine(localAppData, "Pandoc", "pandoc.exe");
                 yield return System.IO.Path.Combine(programFiles, "Pandoc", "pandoc.exe");
                 break;
+            case Tool.SevenZip:
+                yield return System.IO.Path.Combine(programFiles, "7-Zip", "7z.exe");
+                yield return System.IO.Path.Combine(programFilesX86, "7-Zip", "7z.exe");
+                break;
         }
     }
 
@@ -227,6 +233,11 @@ public static class ToolRunner
             case Tool.Soffice:
                 yield return System.IO.Path.Combine(programFiles, "LibreOffice");
                 yield return System.IO.Path.Combine(programFilesX86, "LibreOffice");
+                break;
+            case Tool.SevenZip:
+                yield return System.IO.Path.Combine(programFiles, "7-Zip");
+                yield return System.IO.Path.Combine(programFilesX86, "7-Zip");
+                yield return wingetPackages;
                 break;
         }
     }

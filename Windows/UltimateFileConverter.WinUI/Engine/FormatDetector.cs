@@ -14,6 +14,9 @@ public static class FormatDetector
 
     public static FileKind? DetectByExtension(string path)
     {
+        // Check compound extensions before falling back to the single last extension.
+        if (path.EndsWith(".tar.gz", System.StringComparison.OrdinalIgnoreCase)) return FileKind.TarGz;
+
         var ext = System.IO.Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
         if (string.IsNullOrEmpty(ext)) return null;
         foreach (var kind in Formats.All)

@@ -55,6 +55,7 @@ The app is not notarized, so on first launch macOS may show a Gatekeeper warning
 | Spreadsheets | XLSX, ODS, CSV |
 | Presentations | PPTX, ODP |
 | Subtitles | SRT, ASS/SSA, WebVTT, SBV |
+| Archives | ZIP, 7-Zip, TAR, TAR.GZ |
 
 With Experimental mode on, every category can be coerced into every other category via raw-byte reinterpretation.
 

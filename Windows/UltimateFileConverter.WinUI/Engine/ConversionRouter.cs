@@ -150,6 +150,14 @@ public static class ConversionRouter
             return SubtitleRoute(source, target, inputPath, outputPath);
         }
 
+        // --- Archive -> Archive via 7-Zip ---
+        // All conversions go through a temp extract-then-recompress pipeline.
+        // tar.gz targets need an extra step: create a .tar first, then gzip it.
+        if (src == FileCategory.Archive && dst == FileCategory.Archive)
+        {
+            return ArchiveRoute(source, target, inputPath, outputPath);
+        }
+
         // --- LibreOffice (soffice) family conversions ---
         var soffice = SofficeRoute(source, target, inputPath, outputPath);
         if (soffice is not null) return soffice;
@@ -233,6 +241,57 @@ public static class ConversionRouter
             inputPath, outputPath);
     }
 
+    /// <summary>
+    /// Extract-then-recompress pipeline via 7-Zip. All format pairs share the same extract
+    /// step; tar.gz targets need a two-step compress (tar first, then gzip).
+    /// </summary>
+    private static ConversionPlan ArchiveRoute(FileKind source, FileKind target, string inputPath, string outputPath)
+    {
+        var extractDir = IntermediateDir();
+
+        // Extract step: 7z x -y {INPUT} -o<extractDir>
+        // The dummy outputPath here is never used in argument substitution (args have no {OUTPUT}).
+        var extractDummy = System.IO.Path.Combine(extractDir, ".done");
+        var extractStep = new ConversionStep(Tool.SevenZip,
+            new[] { "x", "-y", "{INPUT}", $"-o{extractDir}" },
+            inputPath, extractDummy);
+
+        // tar.gz target: 7z can't create .tar.gz in one pass — create .tar then gzip it.
+        if (target == FileKind.TarGz)
+        {
+            var tarTemp = System.IO.Path.Combine(AppPathsTemp(), $"{System.Guid.NewGuid():N}.tar");
+            return new ConversionPlan(
+                extractStep,
+                new ConversionStep(Tool.SevenZip,
+                    new[] { "a", "-ttar", "{OUTPUT}", $"{extractDir}/*", "-r" },
+                    extractDummy, tarTemp),
+                new ConversionStep(Tool.SevenZip,
+                    new[] { "a", "-tgzip", "{OUTPUT}", "{INPUT}" },
+                    tarTemp, outputPath));
+        }
+
+        var formatFlag = target switch
+        {
+            FileKind.Zip => "-tzip",
+            FileKind.SevenZ => "-t7z",
+            FileKind.Tar => "-ttar",
+            _ => "-tzip",
+        };
+        return new ConversionPlan(
+            extractStep,
+            new ConversionStep(Tool.SevenZip,
+                new[] { "a", formatFlag, "{OUTPUT}", $"{extractDir}/*", "-r" },
+                extractDummy, outputPath));
+    }
+
+    /// <summary>Creates and returns a fresh temporary subdirectory for archive extraction.</summary>
+    private static string IntermediateDir()
+    {
+        var dir = System.IO.Path.Combine(AppPathsTemp(), System.Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(dir);
+        return dir;
+    }
+
     private static ConversionPlan? SofficeRoute(FileKind source, FileKind target, string inputPath, string outputPath)
     {
         if (target == FileKind.Pdf && SofficeReadable.Contains(source))
@@ -285,7 +344,7 @@ public static class ConversionRouter
                         "-framerate", "10", "-i", "{INPUT}", "-pix_fmt", "yuv420p", "{OUTPUT}" },
                 inputPath, outputPath),
             // No raw decode makes sense for these — copy the bytes under the new extension.
-            _ => ConversionPlan.Single(Tool.Copy, new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath),
+            FileCategory.Archive or _ => ConversionPlan.Single(Tool.Copy, new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath),
         };
     }
 

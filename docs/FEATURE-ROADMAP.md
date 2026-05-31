@@ -79,9 +79,18 @@ directly — no new dependency for three of the four formats.
   SBV ⇄ SRT, then lets ffmpeg reach ass/vtt. This is the only non-trivial part.
 - **Risk:** low–medium. Mostly new-category plumbing; SBV is the one custom path.
 
-## Stage 3 — Archive conversion: ZIP ↔ 7z ↔ tar.gz
+## Stage 3 — Archive conversion: ZIP ↔ 7z ↔ tar.gz  ✅ Shipped
 
 **What:** A new `archive` category converting between zip, 7z, tar, and tar.gz via 7-Zip.
+
+**How it shipped:** New `FileCategory.archive` and `FileKind`s `zip`/`sevenz`/`tar`/`targz`
+on both platforms. The router's `archive → archive` branch uses a two-step extract-then-recompress
+pipeline (`7z x -y {INPUT} -o<dir>` then `7z a -t<fmt> {OUTPUT} <dir>/* -r`). TAR.GZ requires
+a three-step plan: extract → create intermediate `.tar` → `7z a -tgzip`. Both platforms
+handle the `.tar.gz` compound extension in `FormatDetector` (pre-check before the single-extension
+lookup) and in the ViewModel (`GetBaseName`/`baseName` helpers) so output is `file.zip` not
+`file.tar.zip`. `tools/bundle-tools.sh` now bundles `7z` alongside ffmpeg/pandoc; Windows
+`DependencyService` installs `7zip.7zip` via winget. Demo file `samples/hello.zip` was added.
 
 **Why here:** 7-Zip is already half-wired — macOS `Tool` enum has `sevenZip = "7z"`, and the
 README already lists 7-Zip among winget installs. But archive conversion is *not* one-file-in /

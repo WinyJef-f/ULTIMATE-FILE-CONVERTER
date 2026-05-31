@@ -25,7 +25,7 @@ BIN_DST="$APP/Contents/Resources/bin"
 LIB_DST="$APP/Contents/Resources/lib"
 mkdir -p "$BIN_DST" "$LIB_DST"
 
-TOOLS=(ffmpeg pandoc)
+TOOLS=(ffmpeg pandoc 7z)
 
 for tool in "${TOOLS[@]}"; do
     src="$BREW/bin/$tool"
