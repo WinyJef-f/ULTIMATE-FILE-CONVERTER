@@ -381,7 +381,9 @@ public static class ConversionRouter
                         "-framerate", "10", "-i", "{INPUT}", "-pix_fmt", "yuv420p", "{OUTPUT}" },
                 inputPath, outputPath),
             // No raw decode makes sense for these — copy the bytes under the new extension.
-            FileCategory.Archive or _ => ConversionPlan.Single(Tool.Copy, new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath),
+            FileCategory.Document or FileCategory.Spreadsheet or FileCategory.Presentation
+            or FileCategory.Subtitle or FileCategory.Archive or FileCategory.Font or _
+                => ConversionPlan.Single(Tool.Copy, new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath),
         };
     }
 

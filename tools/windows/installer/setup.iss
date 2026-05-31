@@ -4,7 +4,7 @@
 ; Sensible defaults are provided so the script can also be opened directly in the Inno IDE.
 
 #ifndef AppVersion
-  #define AppVersion "1.0.1"
+  #define AppVersion "1.1.0"
 #endif
 #ifndef PublishDir
   #define PublishDir "..\..\..\dist\windows\publish"

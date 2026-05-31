@@ -2,7 +2,7 @@ import Foundation
 
 /// Checks GitHub Releases for a version newer than the current build.
 enum UpdateChecker {
-    static let currentVersion = "1.0.2"
+    static let currentVersion = "1.1.0"
 
     private static let apiURL = URL(string: "https://api.github.com/repos/WinyJef-f/ULTIMATE-FILE-CONVERTER/releases/latest")!
 

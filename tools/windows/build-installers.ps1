@@ -15,7 +15,7 @@
 #>
 param(
     [string]$Configuration = "Release",
-    [string]$Version = "1.0.1",
+    [string]$Version = "1.1.0",
     [string]$Runtime = "win-x64",
     [string]$Platform = "x64"
 )

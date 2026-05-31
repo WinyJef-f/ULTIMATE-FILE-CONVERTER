@@ -125,7 +125,7 @@ struct SetupSheet: View {
 
             // MARK: Footer
             HStack {
-                Button("Skip") {
+                Button("Cancel") {
                     task?.cancel()
                     dismiss()
                 }

@@ -7,7 +7,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="1.0.2"
+VERSION="1.1.0"
 BUNDLE_ID="com.jeffreyheiler.UltimateFileConverter"
 APP_NAME="ULTIMATE-FILE-CONVERTER"
 
