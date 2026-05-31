@@ -128,19 +128,27 @@ alongside this stage.
 - **Router:** `RAW(image) → image`, mirroring the existing SVG-source special case.
 - **Risk:** medium. Windows dependency choice + color/orientation fidelity.
 
-## Stage 5 — Kindle output via Calibre: EPUB → AZW3/MOBI
+## Stage 5 — Kindle output via Calibre: EPUB → AZW3/MOBI  ✅ Shipped
 
 **What:** Kindle-compatible output, complementing existing EPUB support, via Calibre's
 `ebook-convert` CLI.
 
+**How it shipped:** New document `FileKind`s `azw3` and `mobi` on both platforms. `Tool.Calibre`
+/ `Tool.Calibre` added with `ebook-convert` as the executable (winget id `calibre.calibre`).
+The router's Calibre branch runs after soffice and handles `calibreFamily → azw3/mobi` and
+`azw3/mobi → calibreFamily` with `ebook-convert {INPUT} {OUTPUT}` (Calibre auto-detects
+formats from extensions). **Bundling decision:** Calibre (~300–500 MB) is install-on-demand on
+both platforms — macOS resolves via Homebrew search paths then `/Applications/calibre.app/Contents/MacOS/`,
+Windows installs via winget and searches `Program Files\Calibre2`. This keeps the DMG lean.
+Both startup update check (silent launch-time poll) and the quality fix for RAW images were
+also finalised alongside this stage.
+
 - **Models:** new document `FileKind`s `azw3`, `mobi`.
-- **Tool wiring:** add `Tool.Calibre` (`ebook-convert`). Windows winget id
-  `calibre.calibre`; macOS Homebrew `calibre` (cask). **Decision at this stage:** Calibre is
-  large (~300–500 MB) — bundling it inflates the macOS DMG significantly, so we may prefer
-  install-on-demand on macOS too, diverging from the bundle model.
-- **Router:** `ebook-convert {INPUT} {OUTPUT}` for `{epub,docx,html,…} → {azw3,mobi}` (and
-  optionally back to epub).
-- **Risk:** medium. Dependency size/bundling policy is the main decision.
+- **Tool wiring:** `Tool.Calibre` (`ebook-convert`). Windows winget id `calibre.calibre`;
+  macOS searches Homebrew paths then the `.app` bundle in `/Applications`. Not bundled inside
+  the macOS `.app` to keep the DMG lightweight.
+- **Router:** `ebook-convert {INPUT} {OUTPUT}` for `calibreFamily ↔ {azw3,mobi}`.
+- **Risk:** medium (resolved). Dependency size and bundling policy were the main decisions.
 
 ## Stage 6 — Font conversion: TTF ↔ OTF ↔ WOFF ↔ WOFF2
 

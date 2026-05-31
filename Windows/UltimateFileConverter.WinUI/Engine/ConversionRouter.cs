@@ -23,6 +23,10 @@ public static class ConversionRouter
     private static readonly HashSet<FileKind> PandocKinds =
         new() { FileKind.Md, FileKind.Html, FileKind.Docx, FileKind.Odt, FileKind.Rtf, FileKind.Epub, FileKind.Txt, FileKind.Tex };
 
+    private static readonly HashSet<FileKind> CalibreFamily =
+        new() { FileKind.Pdf, FileKind.Docx, FileKind.Doc, FileKind.Odt, FileKind.Rtf,
+                FileKind.Html, FileKind.Md, FileKind.Epub, FileKind.Txt, FileKind.Azw3, FileKind.Mobi };
+
     private static HashSet<FileKind> SofficeReadable
     {
         get
@@ -171,6 +175,18 @@ public static class ConversionRouter
         // --- LibreOffice (soffice) family conversions ---
         var soffice = SofficeRoute(source, target, inputPath, outputPath);
         if (soffice is not null) return soffice;
+
+        // --- Calibre: Kindle/e-book conversions (AZW3, MOBI) ---
+        if (CalibreFamily.Contains(source) && (target is FileKind.Azw3 or FileKind.Mobi))
+        {
+            return ConversionPlan.Single(Tool.Calibre,
+                new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath);
+        }
+        if ((source is FileKind.Azw3 or FileKind.Mobi) && CalibreFamily.Contains(target))
+        {
+            return ConversionPlan.Single(Tool.Calibre,
+                new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath);
+        }
 
         // --- Experimental mode: any -> any via raw-byte reinterpretation / file copy ---
         if (settings.WeirdModeEnabled)

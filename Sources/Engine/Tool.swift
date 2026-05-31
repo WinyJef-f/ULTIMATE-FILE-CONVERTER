@@ -5,6 +5,7 @@ enum Tool: String, CaseIterable {
     case pandoc
     case soffice
     case sevenZip = "7z"
+    case calibre = "ebook-convert"
     case cp           // /bin/cp, used for Experimental-mode file copies
     case native       // Sentinel: dispatched in-process to NativeConverter, no subprocess
 
@@ -34,6 +35,13 @@ enum Tool: String, CaseIterable {
                 return candidate
             }
         }
+
+        // 3. Calibre.app installed in /Applications (non-Homebrew installs)
+        if self == .calibre {
+            let appPath = "/Applications/calibre.app/Contents/MacOS/ebook-convert"
+            if fm.isExecutableFile(atPath: appPath) { return appPath }
+        }
+
         return nil
     }
 

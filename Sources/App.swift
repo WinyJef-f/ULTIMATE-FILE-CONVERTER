@@ -5,11 +5,25 @@ import AppKit
 struct UltimateFileConverterApp: App {
     @StateObject private var vm = AppViewModel()
     @State private var showSettings = false
+    @State private var showUpdateAlert = false
+    @State private var updateTagName = ""
+    @State private var updateReleaseURL: URL? = nil
 
     var body: some Scene {
         WindowGroup("ULTIMATE-FILE-CONVERTER") {
             ContentView(showSettings: $showSettings)
                 .environmentObject(vm)
+                .task { await checkForUpdatesOnStartup() }
+                .alert("Update Available", isPresented: $showUpdateAlert) {
+                    Button("OK", role: .cancel) {}
+                    Button("Take Me There") {
+                        if let url = updateReleaseURL {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                } message: {
+                    Text("Version \(updateTagName) is available on GitHub.")
+                }
         }
         .windowResizability(.contentMinSize)
         .commands {
@@ -40,6 +54,15 @@ struct UltimateFileConverterApp: App {
                 .keyboardShortcut("r", modifiers: .command)
                 .disabled(!vm.isConverting && (!vm.hasPendingItems || vm.targetFormat == nil))
             }
+        }
+    }
+
+    private func checkForUpdatesOnStartup() async {
+        guard let result = try? await UpdateChecker.check() else { return }
+        if case .available(let tagName, let releaseURL) = result {
+            updateTagName = tagName
+            updateReleaseURL = releaseURL
+            showUpdateAlert = true
         }
     }
 

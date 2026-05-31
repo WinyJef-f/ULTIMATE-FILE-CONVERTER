@@ -204,6 +204,10 @@ public static class ToolRunner
                 yield return System.IO.Path.Combine(programFiles, "7-Zip", "7z.exe");
                 yield return System.IO.Path.Combine(programFilesX86, "7-Zip", "7z.exe");
                 break;
+            case Tool.Calibre:
+                yield return System.IO.Path.Combine(programFiles, "Calibre2", "ebook-convert.exe");
+                yield return System.IO.Path.Combine(programFilesX86, "Calibre2", "ebook-convert.exe");
+                break;
         }
     }
 
@@ -237,6 +241,11 @@ public static class ToolRunner
             case Tool.SevenZip:
                 yield return System.IO.Path.Combine(programFiles, "7-Zip");
                 yield return System.IO.Path.Combine(programFilesX86, "7-Zip");
+                yield return wingetPackages;
+                break;
+            case Tool.Calibre:
+                yield return System.IO.Path.Combine(programFiles, "Calibre2");
+                yield return System.IO.Path.Combine(programFilesX86, "Calibre2");
                 yield return wingetPackages;
                 break;
         }

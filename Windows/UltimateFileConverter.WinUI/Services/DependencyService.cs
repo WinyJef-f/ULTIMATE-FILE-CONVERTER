@@ -49,6 +49,9 @@ public sealed class DependencyService
             new Dependency("7-Zip", "7zip.7zip", "7z.exe",
                 new[] { System.IO.Path.Combine(programFiles, "7-Zip"), System.IO.Path.Combine(programFilesX86, "7-Zip") },
                 "Archive conversion (ZIP, 7z, TAR, TAR.GZ)."),
+            new Dependency("Calibre", "calibre.calibre", "ebook-convert.exe",
+                new[] { System.IO.Path.Combine(programFiles, "Calibre2"), System.IO.Path.Combine(programFilesX86, "Calibre2") },
+                "E-book format conversions (EPUB, MOBI, AZW3)."),
         };
     }
 

@@ -38,7 +38,7 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
     // Video
     case mp4, mov, mkv, webm, avi
     // Document
-    case pdf, docx, doc, odt, rtf, html, md, epub, txt, tex
+    case pdf, docx, doc, odt, rtf, html, md, epub, txt, tex, azw3, mobi
     // Spreadsheet
     case xlsx, ods, csv
     // Presentation
@@ -65,7 +65,7 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .jpeg, .png, .webp, .heic, .avif, .gif, .bmp, .tiff, .svg, .ico: return .image
         case .mp3, .wav, .flac, .aac, .m4a, .ogg, .opus, .aiff: return .audio
         case .mp4, .mov, .mkv, .webm, .avi: return .video
-        case .pdf, .docx, .doc, .odt, .rtf, .html, .md, .epub, .txt, .tex: return .document
+        case .pdf, .docx, .doc, .odt, .rtf, .html, .md, .epub, .txt, .tex, .azw3, .mobi: return .document
         case .xlsx, .ods, .csv: return .spreadsheet
         case .pptx, .odp: return .presentation
         case .srt, .ass, .vtt, .sbv: return .subtitle
@@ -109,6 +109,8 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .epub: return "EPUB"
         case .txt: return "Plain Text"
         case .tex: return "LaTeX"
+        case .azw3: return "Kindle (AZW3)"
+        case .mobi: return "Mobipocket (MOBI)"
         case .xlsx: return "Excel (.xlsx)"
         case .ods: return "OpenDocument Sheet"
         case .csv: return "CSV"
@@ -165,6 +167,8 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .epub: return ["epub"]
         case .txt: return ["txt", "text"]
         case .tex: return ["tex", "latex"]
+        case .azw3: return ["azw3"]
+        case .mobi: return ["mobi"]
         case .xlsx: return ["xlsx"]
         case .ods: return ["ods"]
         case .csv: return ["csv"]

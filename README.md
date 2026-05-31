@@ -16,7 +16,7 @@ A universal desktop app for converting files between dozens of formats &mdash; *
 ## Features
 
 - **Drag-and-drop batch conversion.** Drop one file or fifty.
-- **30+ formats** across images, audio, video, documents, spreadsheets, presentations, subtitles.
+- **40+ formats** across images, audio, video, documents, spreadsheets, presentations, subtitles, and e-books.
 - **Smart routing.** The app picks the right tool for each (source, target) pair automatically.
 - **Persistent history** of past conversions, survives across launches.
 - **Configurable quality** &mdash; image quality, audio bitrate, video CRF, output folder.
@@ -52,7 +52,7 @@ The app is not notarized, so on first launch macOS may show a Gatekeeper warning
 | RAW Photo (source only) | CR2, NEF, ARW, DNG |
 | Audio | MP3, WAV, FLAC, AAC, M4A, OGG, OPUS, AIFF |
 | Video | MP4, MOV, MKV, WebM, AVI |
-| Documents | PDF, DOCX, DOC, ODT, RTF, HTML, Markdown, EPUB, TXT, LaTeX |
+| Documents | PDF, DOCX, DOC, ODT, RTF, HTML, Markdown, EPUB, TXT, LaTeX, AZW3, MOBI |
 | Spreadsheets | XLSX, ODS, CSV |
 | Presentations | PPTX, ODP |
 | Subtitles | SRT, ASS/SSA, WebVTT, SBV |
@@ -105,7 +105,7 @@ Outputs land in `dist/windows/`: the published app under `publish/` and the Inno
 - **`ConversionRouter`** maps `(FileKind source, FileKind target, ConversionSettings)` to a sequence of CLI invocations (`ConversionStep[]`). The Windows router mirrors the macOS one branch-for-branch, so both platforms agree on which targets are valid for a given source. It supports multi-step pipelines (e.g.&nbsp;Experimental mode renders raw bytes to an intermediate PNG via ffmpeg, then transcodes to the final image format via magick).
 - **`ToolRunner`** executes each step via Foundation&rsquo;s `Process` on macOS and `System.Diagnostics.Process` on Windows, with cancellation that terminates the child process (and its tree on Windows).
 - **`AppViewModel`** (macOS) / **`MainViewModel`** (Windows) owns the queue, settings, and persistent history. macOS persists settings in `UserDefaults` and history as JSON in `~/Library/Application Support/ULTIMATE-FILE-CONVERTER/`; Windows persists both as JSON in `%LOCALAPPDATA%\ULTIMATE-FILE-CONVERTER\`.
-- **Tools are not bundled on Windows.** macOS bundles tools inside the `.app`. Windows uses winget on first run to install FFmpeg, ImageMagick, MuPDF, Pandoc, LibreOffice, and 7-Zip, avoiding third-party binary redistribution inside the installer.
+- **Tools are not bundled on Windows.** macOS bundles tools inside the `.app`. Windows uses winget on first run to install FFmpeg, ImageMagick, MuPDF, Pandoc, LibreOffice, 7-Zip, and Calibre, avoiding third-party binary redistribution inside the installer.
 
 ## What does the heavy lifting
 
@@ -117,6 +117,7 @@ Outputs land in `dist/windows/`: the published app under `publish/` and the Inno
 | Apple&rsquo;s CGImage / NSImage / CGPDFDocument | macOS image, SVG, and PDF rasterization | Apple system frameworks |
 | [ImageMagick](https://imagemagick.org) | Windows image conversion plus SVG and PDF rasterization | ImageMagick license |
 | [Ghostscript](https://www.ghostscript.com) | Lets ImageMagick read PDFs on Windows (PDF &rarr; image) | AGPL / commercial |
+| [Calibre](https://calibre-ebook.com) (`ebook-convert`) | E-book format conversions (EPUB, MOBI, AZW3) | GPL 3+ |
 
 ## License
 

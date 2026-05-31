@@ -42,15 +42,51 @@ public sealed partial class MainView : UserControl
         if (_checkedFirstRun) return;
         _checkedFirstRun = true;
 
-        if (!_dependencyService.ShouldOfferFirstRunSetup()) return;
+        if (_dependencyService.ShouldOfferFirstRunSetup())
+        {
+            try
+            {
+                var dialog = new DependencyDialog(_dependencyService) { XamlRoot = XamlRoot };
+                await dialog.ShowAsync();
+            }
+            catch
+            {
+                // First-run setup is optional; ignore failures to present it.
+            }
+        }
+
+        _ = CheckForUpdatesAsync();
+    }
+
+    private async System.Threading.Tasks.Task CheckForUpdatesAsync()
+    {
         try
         {
-            var dialog = new DependencyDialog(_dependencyService) { XamlRoot = XamlRoot };
-            await dialog.ShowAsync();
+            var result = await UpdateChecker.CheckAsync().ConfigureAwait(true);
+            if (!result.IsUpdateAvailable || result.TagName is null || result.HtmlUrl is null) return;
+
+            var dialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                Title = "Update Available",
+                Content = $"Version {result.TagName} is available on GitHub.",
+                CloseButtonText = "OK",
+                PrimaryButtonText = "Take Me There",
+            };
+
+            var choice = await dialog.ShowAsync();
+            if (choice == ContentDialogResult.Primary)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(result.HtmlUrl) { UseShellExecute = true });
+                }
+                catch { }
+            }
         }
         catch
         {
-            // First-run setup is optional; ignore failures to present it.
+            // Silent — update check is best-effort on startup.
         }
     }
 

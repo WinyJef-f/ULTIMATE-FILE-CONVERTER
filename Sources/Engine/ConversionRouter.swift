@@ -212,6 +212,22 @@ enum ConversionRouter {
             return plan
         }
 
+        // --- Calibre: Kindle/e-book conversions (AZW3, MOBI) ---
+        if calibreFamily.contains(source) && (target == .azw3 || target == .mobi) {
+            return ConversionPlan(
+                tool: .calibre,
+                arguments: ["{INPUT}", "{OUTPUT}"],
+                input: inputURL, output: outputURL
+            )
+        }
+        if (source == .azw3 || source == .mobi) && calibreFamily.contains(target) {
+            return ConversionPlan(
+                tool: .calibre,
+                arguments: ["{INPUT}", "{OUTPUT}"],
+                input: inputURL, output: outputURL
+            )
+        }
+
         // --- Weird mode fallback: any → any with smart mappings + raw-byte interpretation ---
         if settings.weirdModeEnabled {
             return weirdRoute(source: source, target: target,
@@ -252,6 +268,10 @@ enum ConversionRouter {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
+
+    private static let calibreFamily: Set<FileKind> = [
+        .pdf, .docx, .doc, .odt, .rtf, .html, .md, .epub, .txt, .azw3, .mobi
+    ]
 
     // MARK: - archive routing
 

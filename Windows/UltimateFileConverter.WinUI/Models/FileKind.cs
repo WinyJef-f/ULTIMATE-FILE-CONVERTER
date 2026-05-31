@@ -27,7 +27,7 @@ public enum FileKind
     // Video
     Mp4, Mov, Mkv, Webm, Avi,
     // Document
-    Pdf, Docx, Doc, Odt, Rtf, Html, Md, Epub, Txt, Tex,
+    Pdf, Docx, Doc, Odt, Rtf, Html, Md, Epub, Txt, Tex, Azw3, Mobi,
     // Spreadsheet
     Xlsx, Ods, Csv,
     // Presentation
@@ -60,7 +60,8 @@ public static class Formats
             or FileKind.Ogg or FileKind.Opus or FileKind.Aiff => FileCategory.Audio,
         FileKind.Mp4 or FileKind.Mov or FileKind.Mkv or FileKind.Webm or FileKind.Avi => FileCategory.Video,
         FileKind.Pdf or FileKind.Docx or FileKind.Doc or FileKind.Odt or FileKind.Rtf
-            or FileKind.Html or FileKind.Md or FileKind.Epub or FileKind.Txt or FileKind.Tex => FileCategory.Document,
+            or FileKind.Html or FileKind.Md or FileKind.Epub or FileKind.Txt or FileKind.Tex
+            or FileKind.Azw3 or FileKind.Mobi => FileCategory.Document,
         FileKind.Xlsx or FileKind.Ods or FileKind.Csv => FileCategory.Spreadsheet,
         FileKind.Pptx or FileKind.Odp => FileCategory.Presentation,
         FileKind.Srt or FileKind.Ass or FileKind.Vtt or FileKind.Sbv => FileCategory.Subtitle,
@@ -108,6 +109,8 @@ public static class Formats
         FileKind.Epub => "EPUB",
         FileKind.Txt => "Plain Text",
         FileKind.Tex => "LaTeX",
+        FileKind.Azw3 => "Kindle (AZW3)",
+        FileKind.Mobi => "Mobipocket (MOBI)",
         FileKind.Xlsx => "Excel (.xlsx)",
         FileKind.Ods => "OpenDocument Sheet",
         FileKind.Csv => "CSV",
@@ -164,6 +167,8 @@ public static class Formats
         FileKind.Epub => new[] { "epub" },
         FileKind.Txt => new[] { "txt", "text" },
         FileKind.Tex => new[] { "tex", "latex" },
+        FileKind.Azw3 => new[] { "azw3" },
+        FileKind.Mobi => new[] { "mobi" },
         FileKind.Xlsx => new[] { "xlsx" },
         FileKind.Ods => new[] { "ods" },
         FileKind.Csv => new[] { "csv" },

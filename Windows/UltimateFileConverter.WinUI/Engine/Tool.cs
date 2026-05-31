@@ -15,6 +15,7 @@ public enum Tool
     Pandoc,
     Soffice,
     SevenZip,
+    Calibre,
     Copy,
     Subtitle,
 }
@@ -30,6 +31,7 @@ public static class ToolExtensions
         Tool.Pandoc => "pandoc.exe",
         Tool.Soffice => "soffice.exe",
         Tool.SevenZip => "7z.exe",
+        Tool.Calibre => "ebook-convert.exe",
         Tool.Copy => "<copy>",
         Tool.Subtitle => "<subtitle>",
         _ => throw new System.ArgumentOutOfRangeException(nameof(tool), tool, null),
@@ -44,6 +46,7 @@ public static class ToolExtensions
         Tool.Pandoc => "Pandoc",
         Tool.Soffice => "LibreOffice",
         Tool.SevenZip => "7-Zip",
+        Tool.Calibre => "Calibre",
         Tool.Copy => "file copy",
         Tool.Subtitle => "subtitle converter",
         _ => tool.ToString(),
@@ -58,6 +61,7 @@ public static class ToolExtensions
         Tool.Pandoc => "JohnMacFarlane.Pandoc",
         Tool.Soffice => "TheDocumentFoundation.LibreOffice",
         Tool.SevenZip => "7zip.7zip",
+        Tool.Calibre => "calibre.calibre",
         _ => string.Empty,
     };
 }
