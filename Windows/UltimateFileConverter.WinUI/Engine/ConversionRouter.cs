@@ -46,11 +46,11 @@ public static class ConversionRouter
         var q = settings.ImageQuality.ToString();
         var br = settings.AudioBitrate.ToString();
 
-        // --- RAW Photo -> Image: always decoded at maximum quality (100) for lossless fidelity ---
+        // --- RAW Photo -> Image via ImageMagick (built-in LibRaw delegate) ---
         if (source.IsSourceOnly() && dst == FileCategory.Image)
         {
             return ConversionPlan.Single(Tool.Magick,
-                new[] { "{INPUT}[0]", "-quality", "100", "{OUTPUT}" },
+                new[] { "{INPUT}[0]", "-quality", q, "{OUTPUT}" },
                 inputPath, outputPath);
         }
 

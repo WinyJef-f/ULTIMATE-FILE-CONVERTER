@@ -57,11 +57,12 @@ enum ConversionRouter {
         let src = source.category
         let dst = target.category
 
-        // --- RAW Photo -> Image: always decoded at quality 100 for lossless fidelity ---
+        // --- RAW Photo -> Image via macOS native CGImage frameworks (no external deps) ---
         if source.isSourceOnly && dst == .image {
             return ConversionPlan(
                 tool: .native,
-                arguments: ["image", "{INPUT}", "{OUTPUT}", "100", target.rawValue],
+                arguments: ["image", "{INPUT}", "{OUTPUT}",
+                            "\(settings.imageQuality)", target.rawValue],
                 input: inputURL, output: outputURL
             )
         }
