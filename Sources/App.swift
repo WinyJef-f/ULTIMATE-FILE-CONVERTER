@@ -5,6 +5,7 @@ import AppKit
 struct UltimateFileConverterApp: App {
     @StateObject private var vm = AppViewModel()
     @State private var showSettings = false
+    @State private var showSetup = false
     @State private var showUpdateAlert = false
     @State private var updateTagName = ""
     @State private var updateReleaseURL: URL? = nil
@@ -13,7 +14,10 @@ struct UltimateFileConverterApp: App {
         WindowGroup("ULTIMATE-FILE-CONVERTER") {
             ContentView(showSettings: $showSettings)
                 .environmentObject(vm)
-                .task { await checkForUpdatesOnStartup() }
+                .task { await startup() }
+                .sheet(isPresented: $showSetup) {
+                    SetupSheet { showSetup = false }
+                }
                 .alert("Update Available", isPresented: $showUpdateAlert) {
                     Button("OK", role: .cancel) {}
                     Button("Take Me There") {
@@ -57,7 +61,12 @@ struct UltimateFileConverterApp: App {
         }
     }
 
-    private func checkForUpdatesOnStartup() async {
+    private func startup() async {
+        // First-run: show Homebrew setup sheet if any tools are missing.
+        if BrewDependencyService.shouldOfferFirstRunSetup {
+            showSetup = true
+        }
+        // Silently check for updates; show alert only if a newer release exists.
         guard let result = try? await UpdateChecker.check() else { return }
         if case .available(let tagName, let releaseURL) = result {
             updateTagName = tagName

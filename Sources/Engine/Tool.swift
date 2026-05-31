@@ -14,52 +14,56 @@ enum Tool: String, CaseIterable {
     /// Returns the absolute path to the tool's executable, or nil if not available.
     ///
     /// Lookup order:
-    ///  1. Inside our own .app bundle (Resources/bin/<tool> or Resources/LibreOffice.app/Contents/MacOS/soffice)
-    ///  2. Homebrew and system locations (lets dev builds find tools without re-bundling)
+    ///  1. Homebrew / system paths (primary install method — on-demand via brew)
+    ///  2. /Applications/<App>.app (for GUI cask installs: LibreOffice, Calibre)
+    ///  3. Resources/bin inside the .app (for developer builds that still bundle tools)
     ///
-    /// `.native` returns a sentinel path — ToolRunner short-circuits it before launching a process.
+    /// `.native` returns a sentinel — ToolRunner short-circuits it before launching a process.
     func resolveExecutablePath() -> String? {
         if self == .native { return "<native>" }
 
         let fm = FileManager.default
 
-        // 1. Bundled tools shipped inside the .app
+        // 1. Homebrew and system paths
+        for dir in Self.searchPaths {
+            let candidate = "\(dir)/\(executableName)"
+            if fm.isExecutableFile(atPath: candidate) { return candidate }
+        }
+
+        // 2. GUI cask installs in /Applications
+        for path in applicationsBundlePaths {
+            if fm.isExecutableFile(atPath: path) { return path }
+        }
+
+        // 3. Tools bundled inside the .app (backward compat / dev builds)
         if let bundled = bundledExecutablePath(), fm.isExecutableFile(atPath: bundled) {
             return bundled
         }
 
-        // 2. System / Homebrew fallback
-        for dir in Self.searchPaths {
-            let candidate = "\(dir)/\(executableName)"
-            if fm.isExecutableFile(atPath: candidate) {
-                return candidate
-            }
-        }
-
-        // 3. Calibre.app installed in /Applications (non-Homebrew installs)
-        if self == .calibre {
-            let appPath = "/Applications/calibre.app/Contents/MacOS/ebook-convert"
-            if fm.isExecutableFile(atPath: appPath) { return appPath }
-        }
-
         return nil
+    }
+
+    /// Executables that live inside a .app in /Applications (LibreOffice, Calibre cask installs).
+    private var applicationsBundlePaths: [String] {
+        switch self {
+        case .soffice:
+            return ["/Applications/LibreOffice.app/Contents/MacOS/soffice"]
+        case .calibre:
+            return ["/Applications/calibre.app/Contents/MacOS/ebook-convert"]
+        default:
+            return []
+        }
     }
 
     private func bundledExecutablePath() -> String? {
         guard let resources = Bundle.main.resourceURL else { return nil }
         switch self {
         case .soffice:
-            return resources
-                .appendingPathComponent("LibreOffice.app/Contents/MacOS/soffice")
-                .path
-        case .cp:
-            return nil   // /bin/cp is always present on macOS; no point bundling.
-        case .native:
-            return nil   // Not an executable.
+            return resources.appendingPathComponent("LibreOffice.app/Contents/MacOS/soffice").path
+        case .cp, .native:
+            return nil
         default:
-            return resources
-                .appendingPathComponent("bin/\(executableName)")
-                .path
+            return resources.appendingPathComponent("bin/\(executableName)").path
         }
     }
 
@@ -67,6 +71,6 @@ enum Tool: String, CaseIterable {
         "/opt/homebrew/bin",   // Apple Silicon Homebrew
         "/usr/local/bin",      // Intel Homebrew
         "/usr/bin",
-        "/bin"
+        "/bin",
     ]
 }

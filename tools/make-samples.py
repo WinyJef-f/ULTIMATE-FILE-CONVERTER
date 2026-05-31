@@ -254,8 +254,14 @@ contents genuinely match its extension — regenerate them with `python3 tools/m
 | `hello.png` | 512×320 RGB PNG (gradient + disc) | Image | JPEG, WebP, AVIF, HEIC, BMP, TIFF, ICO |
 | `hello.svg` | SVG vector logo | Image | PNG, JPEG, WebP, PDF |
 | `animated.gif` | 8-frame looping GIF | Image | MP4, WebM, PNG |
+| `hello.dng` | Minimal 4×4 DNG (DNGVersion 1.4, source-only) | RAW Photo | JPEG, PNG, TIFF |
+| `hello.cr2` | Minimal 4×4 TIFF-based RAW stub — Canon CR2 (source-only) | RAW Photo | JPEG, PNG, TIFF |
+| `hello.nef` | Minimal 4×4 TIFF-based RAW stub — Nikon NEF (source-only) | RAW Photo | JPEG, PNG, TIFF |
+| `hello.arw` | Minimal 4×4 TIFF-based RAW stub — Sony ARW (source-only) | RAW Photo | JPEG, PNG, TIFF |
 | `hello.wav` | 16-bit mono PCM tone (A-major arpeggio) | Audio | MP3, FLAC, AAC, M4A, OGG, OPUS |
 | `hello.md` | Markdown document | Document | HTML, DOCX, EPUB, PDF, RTF |
+| `hello.epub` | Valid EPUB 2.0 e-book (XHTML + NCX) | Document | MOBI, AZW3, PDF, DOCX |
+| `hello.mobi` | Minimal Mobipocket e-book (PalmDB + MOBI headers) | Document | EPUB, AZW3, PDF |
 | `hello.srt` | SubRip subtitles | Subtitle | WebVTT, SSA/ASS, YouTube SBV |
 | `hello.sbv` | YouTube SBV subtitles | Subtitle | SubRip, WebVTT, SSA/ASS |
 | `hello.zip` | ZIP archive (3 text files) | Archive | 7-Zip, TAR, TAR.GZ |
@@ -263,6 +269,168 @@ contents genuinely match its extension — regenerate them with `python3 tools/m
 
 
 # ----------------------------------------------------------------------- ZIP
+
+# --------------------------------------------------------------------------- TIFF / RAW
+
+def _tiff_bytes(extra_tags: list | None = None) -> bytes:
+    """Minimal 4×4 16-bit grayscale TIFF. extra_tags: list of (tag, type, count, value)."""
+    tags = [
+        (256, 4, 1, 4),    # ImageWidth = 4 (LONG)
+        (257, 4, 1, 4),    # ImageLength = 4 (LONG)
+        (258, 3, 1, 16),   # BitsPerSample = 16 (SHORT)
+        (259, 3, 1, 1),    # Compression = none (SHORT)
+        (262, 3, 1, 1),    # PhotometricInterpretation = BlackIsZero (SHORT)
+        (277, 3, 1, 1),    # SamplesPerPixel = 1 (SHORT)
+        (278, 4, 1, 4),    # RowsPerStrip = 4 (LONG)
+    ]
+    if extra_tags:
+        tags.extend(extra_tags)
+    n = len(tags) + 2  # +2 for StripOffsets and StripByteCounts
+    strip_off = 8 + 2 + n * 12 + 4
+    tags.append((273, 4, 1, strip_off))
+    tags.append((279, 4, 1, 32))
+    tags.sort(key=lambda t: t[0])
+
+    ifd = struct.pack("<H", n)
+    for tag, typ, count, value in tags:
+        if typ == 1:  # BYTE — value is bytes
+            ifd += struct.pack("<HHI", tag, 1, count) + bytes(value)[:4].ljust(4, b"\x00")
+        elif typ == 3:  # SHORT
+            ifd += struct.pack("<HHIHH", tag, 3, count, value, 0)
+        else:  # LONG
+            ifd += struct.pack("<HHII", tag, 4, count, value)
+    ifd += struct.pack("<I", 0)
+
+    header = b"II" + struct.pack("<HI", 42, 8)
+    pixels = bytes([0x88, 0x1F] * 16)  # 16 pixels × 2 bytes = 32 bytes
+    return header + ifd + pixels
+
+
+def make_dng() -> str:
+    """4×4 16-bit DNG with DNGVersion [1,4,0,0] — a source-only RAW sample."""
+    data = _tiff_bytes(extra_tags=[
+        (50706, 1, 4, b"\x01\x04\x00\x00"),  # DNGVersion = 1.4.0.0
+        (50707, 1, 4, b"\x01\x01\x00\x00"),  # DNGBackwardVersion = 1.1.0.0
+    ])
+    path = os.path.join(SAMPLES_DIR, "hello.dng")
+    with open(path, "wb") as f:
+        f.write(data)
+    return path
+
+
+def make_raw_stub(ext: str) -> str:
+    """Minimal TIFF-based stub for a RAW camera extension (source-only)."""
+    path = os.path.join(SAMPLES_DIR, f"hello.{ext}")
+    with open(path, "wb") as f:
+        f.write(_tiff_bytes())
+    return path
+
+
+# --------------------------------------------------------------------------- EPUB
+
+def make_epub() -> str:
+    """A minimal but fully conformant EPUB 2.0 e-book."""
+    container = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">'
+        '<rootfiles>'
+        '<rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>'
+        '</rootfiles>'
+        '</container>'
+    )
+    opf = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="uid">'
+        '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
+        '<dc:title>Hello from ULTIMATE-FILE-CONVERTER</dc:title>'
+        '<dc:identifier id="uid">urn:uuid:hello-ufc-sample-001</dc:identifier>'
+        '<dc:language>en</dc:language>'
+        '</metadata>'
+        '<manifest>'
+        '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
+        '<item id="content" href="content.xhtml" media-type="application/xhtml+xml"/>'
+        '</manifest>'
+        '<spine toc="ncx"><itemref idref="content"/></spine>'
+        '</package>'
+    )
+    ncx = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"'
+        ' "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">'
+        '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">'
+        '<head><meta name="dtb:uid" content="urn:uuid:hello-ufc-sample-001"/></head>'
+        '<docTitle><text>Hello from ULTIMATE-FILE-CONVERTER</text></docTitle>'
+        '<navMap>'
+        '<navPoint id="nav1" playOrder="1">'
+        '<navLabel><text>Hello</text></navLabel>'
+        '<content src="content.xhtml"/>'
+        '</navPoint>'
+        '</navMap>'
+        '</ncx>'
+    )
+    xhtml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"'
+        ' "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
+        '<html xmlns="http://www.w3.org/1999/xhtml">'
+        '<head><title>Hello from ULTIMATE-FILE-CONVERTER</title></head>'
+        '<body>'
+        '<h1>Hello from ULTIMATE-FILE-CONVERTER</h1>'
+        '<p>Drop this EPUB into the app and convert it to MOBI, AZW3, PDF, or DOCX.</p>'
+        '<p>Every file you convert stays on your device — no uploads, no accounts.</p>'
+        '</body>'
+        '</html>'
+    )
+    path = os.path.join(SAMPLES_DIR, "hello.epub")
+    with zipfile.ZipFile(path, "w") as zf:
+        mime_info = zipfile.ZipInfo("mimetype")
+        mime_info.compress_type = zipfile.ZIP_STORED
+        zf.writestr(mime_info, "application/epub+zip")
+        zf.writestr("META-INF/container.xml", container)
+        zf.writestr("OEBPS/content.opf", opf)
+        zf.writestr("OEBPS/toc.ncx", ncx)
+        zf.writestr("OEBPS/content.xhtml", xhtml)
+    return path
+
+
+# --------------------------------------------------------------------------- MOBI
+
+def make_mobi() -> str:
+    """Minimal Mobipocket e-book (PalmDB + MOBI headers) that Calibre can open."""
+    text = (
+        b"<html><head><title>Hello from ULTIMATE-FILE-CONVERTER</title></head>"
+        b"<body><h1>Hello from ULTIMATE-FILE-CONVERTER</h1>"
+        b"<p>Drop this MOBI into the app and convert to EPUB, AZW3, or PDF.</p>"
+        b"</body></html>"
+    )
+    # Record 0: PalmDOC header (16 bytes) + MOBI header (16 bytes)
+    palmdoc = struct.pack(">HHIHHHH", 1, 0, len(text), 1, 4096, 0, 0)
+    mobi_hdr = struct.pack(">4sIII", b"MOBI", 16, 2, 65001)  # type=book, UTF-8
+    record0 = palmdoc + mobi_hdr  # 32 bytes
+
+    # PDB file header: 78 bytes (big-endian)
+    db_name = b"Hello-UFC\x00" + bytes(22)  # padded to 32 bytes
+    pdb_hdr = (
+        db_name
+        + struct.pack(">HHIIIIII", 0, 0, 0, 0, 0, 0, 0, 0)  # attrs..sort_info (28 bytes)
+        + b"BOOK" + b"MOBI"
+        + struct.pack(">IIH", 0, 0, 2)   # uid_seed, next_list_id, num_records (10 bytes)
+    )  # 32+28+4+4+10 = 78 bytes
+
+    # Record list: 2 records × 8 bytes + 2-byte gap = 18 bytes → records start at offset 96
+    r0_off = 96
+    r1_off = r0_off + len(record0)
+    rec_list = (
+        struct.pack(">I", r0_off) + b"\x00\x00\x00\x00"
+        + struct.pack(">I", r1_off) + b"\x00\x00\x00\x01"
+        + b"\x00\x00"
+    )
+
+    path = os.path.join(SAMPLES_DIR, "hello.mobi")
+    with open(path, "wb") as f:
+        f.write(pdb_hdr + rec_list + record0 + text)
+    return path
+
 
 def make_zip() -> str:
     """A ZIP archive containing three small text files — a clearly valid archive sample."""
@@ -370,7 +538,13 @@ def main() -> None:
         make_wav(),
         make_gif(),
         write_text("hello.svg", SVG),
+        make_dng(),
+        make_raw_stub("cr2"),
+        make_raw_stub("nef"),
+        make_raw_stub("arw"),
         write_text("hello.md", MARKDOWN),
+        make_epub(),
+        make_mobi(),
         write_text("hello.srt", SRT),
         write_text("hello.sbv", SBV),
         make_zip(),

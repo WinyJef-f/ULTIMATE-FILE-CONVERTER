@@ -1,13 +1,14 @@
 #!/bin/bash
-# Embeds every conversion tool and its dylib dependencies inside the built .app.
-# Usage: bundle-tools.sh path/to/ULTIMATE-FILE-CONVERTER.app
+# DEPRECATED: The app now uses install-on-demand via Homebrew (BrewDependencyService)
+# instead of bundling tools inside the .app. This script is kept for reference and for
+# developers who prefer a self-contained build, but it is no longer called by
+# build-installer.sh. Tools are installed on first launch via the first-run setup sheet.
 #
-# After bundling, the .app is fully self-contained:
-#   Contents/Resources/bin/        - tool binaries (ffmpeg, magick, pandoc, gs, rsvg-convert)
-#   Contents/Resources/lib/        - dylib dependencies (rewritten to @executable_path/../lib)
-#   Contents/Resources/LibreOffice.app/ - LibreOffice for Office conversions
+# If you still want a self-contained build:
+#   ./tools/bundle-tools.sh path/to/ULTIMATE-FILE-CONVERTER.app
 #
-# Tool.swift in the app already looks for tools under Contents/Resources/bin first.
+# Tool.swift checks bundled paths AFTER Homebrew paths, so bundled tools are used as a
+# fallback only when the Homebrew equivalents are not found.
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then

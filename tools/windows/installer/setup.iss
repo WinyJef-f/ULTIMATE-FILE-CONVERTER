@@ -38,9 +38,15 @@ WizardStyle=modern
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 PrivilegesRequired=admin
+LicenseFile=resources\license.rtf
+InfoAfterFile=resources\readme.rtf
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Messages]
+WelcomeLabel1=Welcome to ULTIMATE-FILE-CONVERTER
+WelcomeLabel2=ULTIMATE-FILE-CONVERTER converts files between 40+ formats — images, audio, video, documents, spreadsheets, presentations, subtitles, archives, and e-books — entirely on your device, with no network calls or uploads.%n%nOn first launch, the app will offer to install the required conversion tools (FFmpeg, ImageMagick, Pandoc, LibreOffice, 7-Zip, Calibre) via winget. Windows may prompt for permission per package.%n%nClick Next to continue.
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"

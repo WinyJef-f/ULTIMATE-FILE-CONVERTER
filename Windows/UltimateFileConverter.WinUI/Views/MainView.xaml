@@ -98,7 +98,7 @@
         <!-- ======================= Content state ======================= -->
         <ScrollViewer Grid.Row="1" Padding="20"
                       Visibility="{x:Bind ViewModel.ShowEmptyState, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-            <StackPanel Spacing="18" MaxWidth="900" HorizontalAlignment="Center">
+            <StackPanel Spacing="18">
 
                 <!-- compact drop zone -->
                 <Grid x:Name="CompactDropZone" Background="Transparent" Tapped="DropZone_Tapped" Height="56">

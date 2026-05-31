@@ -30,4 +30,4 @@ targets:
         INFOPLIST_KEY_LSMinimumSystemVersion: "13.0"
         INFOPLIST_KEY_NSHighResolutionCapable: YES
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
-        INFOPLIST_KEY_NSHumanReadableCopyright: "Bundled tools (FFmpeg, ImageMagick, Pandoc, LibreOffice, Ghostscript, p7zip, librsvg) are invoked from the user's Homebrew install. Each retains its own license."
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Conversion tools (FFmpeg, Pandoc, LibreOffice, 7-Zip, Calibre) are installed on demand via Homebrew and retain their own licenses."

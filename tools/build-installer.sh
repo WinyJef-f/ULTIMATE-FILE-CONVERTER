@@ -44,10 +44,7 @@ if [[ ! -d "$RELEASE_APP" ]]; then
 fi
 echo "    .app at $RELEASE_APP ($(du -sh "$RELEASE_APP" | cut -f1))"
 
-echo "==> Bundling tools (ffmpeg / magick / pandoc / gs / rsvg-convert / LibreOffice) into .app ..."
-"$PROJECT_DIR/tools/bundle-tools.sh" "$RELEASE_APP"
-
-echo "==> Staging payload..."
+echo "==> Staging payload (tools installed on first launch via Homebrew — not bundled)..."
 PAYLOAD_ROOT="$SCRATCH/payload"
 mkdir -p "$PAYLOAD_ROOT/Applications"
 cp -R "$RELEASE_APP" "$PAYLOAD_ROOT/Applications/"

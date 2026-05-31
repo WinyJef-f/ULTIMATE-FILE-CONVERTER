@@ -30,8 +30,8 @@ A universal desktop app for converting files between dozens of formats &mdash; *
 
 1. Download the latest **`.dmg`** from [Releases](https://github.com/WinyJef-f/ULTIMATE-FILE-CONVERTER/releases/latest)
 2. Open the DMG and double-click the **`.pkg`** inside
-3. Click through the installer &mdash; that's it
-4. Open **ULTIMATE-FILE-CONVERTER** from your Applications folder
+3. Click through the installer &mdash; the app is placed in Applications
+4. Open **ULTIMATE-FILE-CONVERTER**. On first launch a setup screen installs the conversion tools via **Homebrew** (FFmpeg, Pandoc, 7-Zip, LibreOffice, Calibre). If Homebrew is not installed, get it from [brew.sh](https://brew.sh) first.
 
 ### Windows
 
