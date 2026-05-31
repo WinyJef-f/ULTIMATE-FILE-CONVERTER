@@ -51,9 +51,20 @@ enum ConversionRouter {
                      outputURL: URL,
                      settings: ConversionSettings = ConversionSettings()) -> ConversionPlan? {
         guard source != target else { return nil }
+        // RAW photo formats are source-only; they are never valid output targets.
+        if target.isSourceOnly { return nil }
 
         let src = source.category
         let dst = target.category
+
+        // --- RAW Photo -> Image: always decoded at quality 100 for lossless fidelity ---
+        if source.isSourceOnly && dst == .image {
+            return ConversionPlan(
+                tool: .native,
+                arguments: ["image", "{INPUT}", "{OUTPUT}", "100", target.rawValue],
+                input: inputURL, output: outputURL
+            )
+        }
 
         // --- SVG source: render natively via NSImage (handles WebKit-backed SVG) ---
         if source == .svg && dst == .image {

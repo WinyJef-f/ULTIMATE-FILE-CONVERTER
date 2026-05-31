@@ -36,6 +36,8 @@ public enum FileKind
     Srt, Ass, Vtt, Sbv,
     // Archive
     Zip, SevenZ, Tar, TarGz,
+    // RAW Photo (source-only — never a conversion target)
+    Cr2, Nef, Arw, Dng,
 }
 
 /// <summary>
@@ -63,8 +65,13 @@ public static class Formats
         FileKind.Pptx or FileKind.Odp => FileCategory.Presentation,
         FileKind.Srt or FileKind.Ass or FileKind.Vtt or FileKind.Sbv => FileCategory.Subtitle,
         FileKind.Zip or FileKind.SevenZ or FileKind.Tar or FileKind.TarGz => FileCategory.Archive,
+        FileKind.Cr2 or FileKind.Nef or FileKind.Arw or FileKind.Dng => FileCategory.Image,
         _ => FileCategory.Document,
     };
+
+    /// <summary>True for RAW camera formats that are source-only — they are never conversion targets.</summary>
+    public static bool IsSourceOnly(this FileKind kind) =>
+        kind is FileKind.Cr2 or FileKind.Nef or FileKind.Arw or FileKind.Dng;
 
     public static string DisplayName(this FileKind kind) => kind switch
     {
@@ -114,6 +121,10 @@ public static class Formats
         FileKind.SevenZ => "7-Zip",
         FileKind.Tar => "TAR",
         FileKind.TarGz => "TAR.GZ",
+        FileKind.Cr2 => "Canon RAW (CR2)",
+        FileKind.Nef => "Nikon RAW (NEF)",
+        FileKind.Arw => "Sony RAW (ARW)",
+        FileKind.Dng => "DNG",
         _ => kind.ToString().ToUpperInvariant(),
     };
 
@@ -166,6 +177,10 @@ public static class Formats
         FileKind.SevenZ => new[] { "7z" },
         FileKind.Tar => new[] { "tar" },
         FileKind.TarGz => new[] { "tgz", "tar.gz" },
+        FileKind.Cr2 => new[] { "cr2" },
+        FileKind.Nef => new[] { "nef" },
+        FileKind.Arw => new[] { "arw" },
+        FileKind.Dng => new[] { "dng" },
         _ => new[] { kind.ToString().ToLowerInvariant() },
     };
 

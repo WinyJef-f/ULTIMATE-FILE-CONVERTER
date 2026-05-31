@@ -49,6 +49,7 @@ The app is not notarized, so on first launch macOS may show a Gatekeeper warning
 | Category | Formats |
 |---|---|
 | Image | JPEG, PNG, WebP, HEIC, AVIF, GIF, BMP, TIFF, SVG, ICO |
+| RAW Photo (source only) | CR2, NEF, ARW, DNG |
 | Audio | MP3, WAV, FLAC, AAC, M4A, OGG, OPUS, AIFF |
 | Video | MP4, MOV, MKV, WebM, AVI |
 | Documents | PDF, DOCX, DOC, ODT, RTF, HTML, Markdown, EPUB, TXT, LaTeX |

@@ -5,6 +5,7 @@ struct QueueRowView: View {
     let item: QueueItem
     var onRemove: () -> Void
     var onReveal: (URL) -> Void
+    var onRetry: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -122,6 +123,9 @@ struct QueueRowView: View {
                 Divider()
             }
             if case .failed(let msg) = item.status {
+                Button { onRetry() } label: {
+                    Label("Retry", systemImage: "arrow.clockwise")
+                }
                 Button {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(msg, forType: .string)

@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml.Controls;
 using UltimateFileConverter.WinUI.Models;
+using UltimateFileConverter.WinUI.Services;
 using Windows.Storage.Pickers;
 
 namespace UltimateFileConverter.WinUI.Views;
@@ -30,6 +31,7 @@ public sealed partial class SettingsDialog : ContentDialog
         ExperimentalToggle.IsOn = current.WeirdModeEnabled;
         ExperimentalWarning.IsOpen = current.WeirdModeEnabled;
         FullHistoryCountLabel.Text = FormatCount(fullHistoryCount);
+        CurrentVersionLabel.Text = $"Current version: {UpdateChecker.CurrentVersion}";
 
         PrimaryButtonClick += (_, _) => Result = BuildSettings();
     }
@@ -80,6 +82,41 @@ public sealed partial class SettingsDialog : ContentDialog
         {
             _customFolderPath = folder.Path;
             FolderPathText.Text = folder.Path;
+        }
+    }
+
+    private async void CheckUpdates_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        CheckUpdatesButton.IsEnabled = false;
+        UpdateStatusText.Text = string.Empty;
+        UpdateLink.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        UpdateCheckRing.IsActive = true;
+        UpdateCheckRing.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+
+        try
+        {
+            var result = await UpdateChecker.CheckAsync();
+            if (result.IsUpdateAvailable && result.HtmlUrl is not null)
+            {
+                UpdateStatusText.Text = $"{result.TagName} available  —  ";
+                UpdateLink.Content = "Download";
+                UpdateLink.NavigateUri = new System.Uri(result.HtmlUrl);
+                UpdateLink.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+            }
+            else
+            {
+                UpdateStatusText.Text = "You're up to date";
+            }
+        }
+        catch
+        {
+            UpdateStatusText.Text = "Check failed — try again later";
+        }
+        finally
+        {
+            UpdateCheckRing.IsActive = false;
+            UpdateCheckRing.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            CheckUpdatesButton.IsEnabled = true;
         }
     }
 

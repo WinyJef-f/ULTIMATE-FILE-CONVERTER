@@ -292,6 +292,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
         RaiseQueueDerived();
     }
 
+    /// <summary>Resets a failed item to pending and immediately starts (or continues) conversion.</summary>
+    public async Task RetryItemAsync(QueueItem item)
+    {
+        var existing = Queue.FirstOrDefault(i => i.Id == item.Id);
+        if (existing is null || !existing.IsFailed) return;
+        existing.ErrorMessage = null;
+        existing.Status = QueueItemStatus.Pending;
+        RaiseQueueDerived();
+        if (!IsConverting)
+            await ConvertAsync();
+    }
+
     private async Task ConvertItemAsync(System.Guid id, CancellationToken token)
     {
         if (token.IsCancellationRequested) return;

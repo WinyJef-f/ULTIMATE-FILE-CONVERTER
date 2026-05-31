@@ -38,11 +38,21 @@ public static class ConversionRouter
         FileKind source, FileKind target, string inputPath, string outputPath, ConversionSettings settings)
     {
         if (source == target) return null;
+        // RAW photo formats are source-only; they are never valid output targets.
+        if (target.IsSourceOnly()) return null;
 
         var src = source.Category();
         var dst = target.Category();
         var q = settings.ImageQuality.ToString();
         var br = settings.AudioBitrate.ToString();
+
+        // --- RAW Photo -> Image: always decoded at maximum quality (100) for lossless fidelity ---
+        if (source.IsSourceOnly() && dst == FileCategory.Image)
+        {
+            return ConversionPlan.Single(Tool.Magick,
+                new[] { "{INPUT}[0]", "-quality", "100", "{OUTPUT}" },
+                inputPath, outputPath);
+        }
 
         // --- SVG source: rasterize at high density via ImageMagick for crispness ---
         if (source == FileKind.Svg && dst == FileCategory.Image)

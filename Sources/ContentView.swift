@@ -95,6 +95,9 @@ struct ContentView: View {
                         },
                         onReveal: { url in
                             NSWorkspace.shared.activateFileViewerSelecting([url])
+                        },
+                        onRetry: {
+                            vm.retryItem(item)
                         }
                     )
                     .transition(.asymmetric(

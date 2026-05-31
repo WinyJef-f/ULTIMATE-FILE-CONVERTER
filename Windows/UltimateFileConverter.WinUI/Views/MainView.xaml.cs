@@ -177,11 +177,18 @@ public sealed partial class MainView : UserControl
             flyout.Items.Add(new MenuFlyoutSeparator());
         }
 
-        if (item.IsFailed && !string.IsNullOrEmpty(item.ErrorMessage))
+        if (item.IsFailed)
         {
-            var copy = new MenuFlyoutItem { Text = "Copy error message" };
-            copy.Click += (_, _) => CopyText(item.ErrorMessage!);
-            flyout.Items.Add(copy);
+            var retry = new MenuFlyoutItem { Text = "Retry" };
+            retry.Click += async (_, _) => await ViewModel.RetryItemAsync(item);
+            flyout.Items.Add(retry);
+
+            if (!string.IsNullOrEmpty(item.ErrorMessage))
+            {
+                var copy = new MenuFlyoutItem { Text = "Copy error message" };
+                copy.Click += (_, _) => CopyText(item.ErrorMessage!);
+                flyout.Items.Add(copy);
+            }
 
             flyout.Items.Add(new MenuFlyoutSeparator());
         }

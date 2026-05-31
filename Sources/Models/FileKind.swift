@@ -47,8 +47,18 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
     case srt, ass, vtt, sbv
     // Archive
     case zip, sevenz = "sevenz", tar, targz = "targz"
+    // RAW Photo (source-only — never a conversion target)
+    case cr2, nef, arw, dng
 
     var id: String { rawValue }
+
+    /// True for RAW camera formats that can only be a conversion source, never a target.
+    var isSourceOnly: Bool {
+        switch self {
+        case .cr2, .nef, .arw, .dng: return true
+        default: return false
+        }
+    }
 
     var category: FileCategory {
         switch self {
@@ -60,6 +70,7 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .pptx, .odp: return .presentation
         case .srt, .ass, .vtt, .sbv: return .subtitle
         case .zip, .sevenz, .tar, .targz: return .archive
+        case .cr2, .nef, .arw, .dng: return .image
         }
     }
 
@@ -111,6 +122,10 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .sevenz: return "7-Zip"
         case .tar: return "TAR"
         case .targz: return "TAR.GZ"
+        case .cr2: return "Canon RAW (CR2)"
+        case .nef: return "Nikon RAW (NEF)"
+        case .arw: return "Sony RAW (ARW)"
+        case .dng: return "DNG"
         }
     }
 
@@ -163,6 +178,10 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .sevenz: return ["7z"]
         case .tar: return ["tar"]
         case .targz: return ["tgz", "tar.gz"]
+        case .cr2: return ["cr2"]
+        case .nef: return ["nef"]
+        case .arw: return ["arw"]
+        case .dng: return ["dng"]
         }
     }
 

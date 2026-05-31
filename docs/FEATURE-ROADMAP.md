@@ -105,9 +105,18 @@ pipeline and temp-dir lifecycle.
   target format. tar.gz needs the tar+gzip combination 7-Zip handles in two passes.
 - **Risk:** medium. Temp-dir management, nested tar.gz, and path/space handling.
 
-## Stage 4 — RAW photo support: CR2, NEF, ARW, DNG
+## Stage 4 — RAW photo support: CR2, NEF, ARW, DNG  ✅ Shipped
 
 **What:** Read camera RAW files and convert them to standard images (RAW is source-only).
+
+**How it shipped:** New `FileKind`s `cr2`/`nef`/`arw`/`dng` with `category = .image` and an
+`isSourceOnly`/`IsSourceOnly()` flag on both platforms. The router rejects any source-only
+kind as a target and routes `source.isSourceOnly && dst == .image` to the native decode path
+with quality forced to 100 — no lossy degradation. macOS uses `CGImageSourceCreateWithURL`
+which decodes all four RAW formats natively via Apple's RAW frameworks; Windows uses ImageMagick
+which ships with built-in LibRaw/dcraw support in current distributions. No new external
+dependency on either platform. Retry-on-failure and Check for Updates were also shipped
+alongside this stage.
 
 - **Models:** new image `FileKind`s `cr2`, `nef`, `arw`, `dng` (category `image`,
   source-only — never an output target).

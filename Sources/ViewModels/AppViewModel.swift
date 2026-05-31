@@ -162,6 +162,16 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    /// Resets a failed item to pending and immediately starts (or continues) conversion.
+    func retryItem(_ item: QueueItem) {
+        guard let idx = queue.firstIndex(where: { $0.id == item.id }),
+              queue[idx].status.isFailed else { return }
+        queue[idx].status = .pending
+        if !isConverting {
+            startConversion()
+        }
+    }
+
     private func runConversion() async {
         isConverting = true
         defer {
