@@ -208,6 +208,10 @@ public static class ToolRunner
                 yield return System.IO.Path.Combine(programFiles, "Calibre2", "ebook-convert.exe");
                 yield return System.IO.Path.Combine(programFilesX86, "Calibre2", "ebook-convert.exe");
                 break;
+            case Tool.Fontforge:
+                yield return System.IO.Path.Combine(programFiles, "FontForgeBuilds", "bin", "fontforge.exe");
+                yield return System.IO.Path.Combine(programFilesX86, "FontForgeBuilds", "bin", "fontforge.exe");
+                break;
         }
     }
 
@@ -246,6 +250,11 @@ public static class ToolRunner
             case Tool.Calibre:
                 yield return System.IO.Path.Combine(programFiles, "Calibre2");
                 yield return System.IO.Path.Combine(programFilesX86, "Calibre2");
+                yield return wingetPackages;
+                break;
+            case Tool.Fontforge:
+                yield return System.IO.Path.Combine(programFiles, "FontForgeBuilds");
+                yield return System.IO.Path.Combine(programFilesX86, "FontForgeBuilds");
                 yield return wingetPackages;
                 break;
         }

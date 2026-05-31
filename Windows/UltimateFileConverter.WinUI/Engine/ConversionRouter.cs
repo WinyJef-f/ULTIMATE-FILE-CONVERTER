@@ -172,6 +172,17 @@ public static class ConversionRouter
             return ArchiveRoute(source, target, inputPath, outputPath);
         }
 
+        // --- Font -> Font via FontForge (TTF, OTF, WOFF, WOFF2) ---
+        // FontForge reads and writes every desktop/web font format and picks the output
+        // format from the file extension. Its scripting one-liner opens the source and
+        // regenerates it as the target — handling outline conversion (TTF⇄OTF) for us.
+        if (src == FileCategory.Font && dst == FileCategory.Font)
+        {
+            return ConversionPlan.Single(Tool.Fontforge,
+                new[] { "-lang=ff", "-c", "Open($1); Generate($2)", "{INPUT}", "{OUTPUT}" },
+                inputPath, outputPath);
+        }
+
         // --- LibreOffice (soffice) family conversions ---
         var soffice = SofficeRoute(source, target, inputPath, outputPath);
         if (soffice is not null) return soffice;

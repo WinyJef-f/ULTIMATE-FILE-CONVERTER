@@ -206,6 +206,18 @@ enum ConversionRouter {
                                 inputURL: inputURL, outputURL: outputURL)
         }
 
+        // --- Font -> Font via FontForge (TTF, OTF, WOFF, WOFF2) ---
+        // FontForge reads and writes every desktop/web font format and picks the output
+        // format from the file extension. Its scripting one-liner opens the source and
+        // regenerates it as the target — handling outline conversion (TTF⇄OTF) for us.
+        if src == .font && dst == .font {
+            return ConversionPlan(
+                tool: .fontforge,
+                arguments: ["-lang=ff", "-c", "Open($1); Generate($2)", "{INPUT}", "{OUTPUT}"],
+                input: inputURL, output: outputURL
+            )
+        }
+
         // --- LibreOffice (soffice) family conversions ---
         if let plan = sofficeRoute(source: source, target: target,
                                     inputURL: inputURL, outputURL: outputURL) {
@@ -446,7 +458,7 @@ enum ConversionRouter {
             return rawBytesToAudio(target: target, inputURL: inputURL, outputURL: outputURL)
         case .video:
             return rawBytesToVideo(target: target, inputURL: inputURL, outputURL: outputURL)
-        case .document, .spreadsheet, .presentation, .subtitle, .archive:
+        case .document, .spreadsheet, .presentation, .subtitle, .archive, .font:
             // No "raw decode" makes sense for these — just copy bytes with the new extension.
             return ConversionPlan(
                 tool: .cp,

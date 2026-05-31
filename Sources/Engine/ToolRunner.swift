@@ -31,6 +31,7 @@ extension Tool {
         case .soffice: return "--cask libreoffice"
         case .sevenZip: return "p7zip"
         case .calibre: return "calibre"
+        case .fontforge: return "fontforge"
         case .cp: return "" // /bin/cp is built into macOS
         case .native: return "" // not an external tool
         }

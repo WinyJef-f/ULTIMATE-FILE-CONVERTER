@@ -63,6 +63,12 @@ enum BrewDependencyService {
             tool: .calibre,
             purpose: "E-book format conversions (EPUB, MOBI, AZW3)."
         ),
+        BrewDependency(
+            friendlyName: "FontForge",
+            formula: "fontforge",
+            tool: .fontforge,
+            purpose: "Font format conversions (TTF, OTF, WOFF, WOFF2)."
+        ),
     ]
 
     // MARK: Status

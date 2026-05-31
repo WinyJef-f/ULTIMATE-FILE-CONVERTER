@@ -150,21 +150,31 @@ also finalised alongside this stage.
 - **Router:** `ebook-convert {INPUT} {OUTPUT}` for `calibreFamily ↔ {azw3,mobi}`.
 - **Risk:** medium (resolved). Dependency size and bundling policy were the main decisions.
 
-## Stage 6 — Font conversion: TTF ↔ OTF ↔ WOFF ↔ WOFF2
+## Stage 6 — Font conversion: TTF ↔ OTF ↔ WOFF ↔ WOFF2  ✅ Shipped
 
 **What:** A new `font` category converting between desktop and web font formats.
 
-**Why harder than it looks:** The natural tool, **fonttools**, is a *Python package*, which
-does not fit the app's winget/Homebrew-binary dependency model. Options: (a) `fonttools` via
-a bundled Python, (b) Google's `woff2` binaries (`woff2_compress`/`woff2_decompress`, brew
-`woff2`) plus `sfnt2woff`/`sfnt2woff-zopfli` for WOFF1, or (c) a small bundled Rust/Go helper.
+**How it shipped:** New `FileCategory.font` and `FileKind`s `ttf`/`otf`/`woff`/`woff2` on both
+platforms. The packaging problem was solved by choosing **FontForge** as the engine: unlike
+the Python-only `fonttools`, FontForge has both a Homebrew formula (`fontforge`) and a winget
+package (`FontForge.FontForge`), so it slots straight into the existing install-on-demand
+model with no bundled Python. The router's `font → font` branch (placed after the archive
+branch) runs FontForge's documented scripting one-liner —
+`fontforge -lang=ff -c 'Open($1); Generate($2)' {INPUT} {OUTPUT}` — which reads any of the
+four formats and picks the output format from the file extension, handling the TTF⇄OTF
+outline conversion (quadratic ⇄ cubic) internally. `Tool.fontforge` / `Tool.Fontforge` were
+added with the install paths (`/opt/homebrew/bin`, `/Applications/FontForge.app`, and
+`Program Files\FontForgeBuilds\bin` on Windows), and FontForge joined both dependency
+services. `FormatDetector` gained sfnt/`OTTO`/`wOFF`/`wOF2` magic-byte sniffing on Windows.
+Demo files `samples/hello.{ttf,otf,woff,woff2}` were added (generated with fontTools, the
+one sample exception to the make-samples.py pure-stdlib rule).
 
 - **Models:** new `FileCategory.font`; new `FileKind`s `ttf`, `otf`, `woff`, `woff2`.
-- **Tool wiring:** whichever toolchain we pick must be made installable/bundlable on both
-  platforms — this is the bulk of the work.
-- **Router:** `font → font`. WOFF2 ⇄ TTF/OTF is straightforward with `woff2`; WOFF1 and
-  TTF⇄OTF outline conversion need the extra tools.
-- **Risk:** medium–high, driven entirely by packaging the toolchain cross-platform.
+- **Tool wiring:** `Tool.fontforge` (`fontforge` / `fontforge.exe`); brew formula `fontforge`,
+  winget id `FontForge.FontForge`. Not bundled — installed on demand like every other tool.
+- **Router:** `font → font` via FontForge's `Open`/`Generate` script for all pairs.
+- **Risk:** medium–high (resolved). Picking FontForge — one tool on both package managers —
+  removed the cross-platform packaging risk that made this stage hard.
 
 ## Stage 7 — Right-click "Convert with UFC"
 

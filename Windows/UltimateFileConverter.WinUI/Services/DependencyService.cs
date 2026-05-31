@@ -52,6 +52,9 @@ public sealed class DependencyService
             new Dependency("Calibre", "calibre.calibre", "ebook-convert.exe",
                 new[] { System.IO.Path.Combine(programFiles, "Calibre2"), System.IO.Path.Combine(programFilesX86, "Calibre2") },
                 "E-book format conversions (EPUB, MOBI, AZW3)."),
+            new Dependency("FontForge", "FontForge.FontForge", "fontforge.exe",
+                new[] { System.IO.Path.Combine(programFiles, "FontForgeBuilds"), System.IO.Path.Combine(programFilesX86, "FontForgeBuilds") },
+                "Font format conversions (TTF, OTF, WOFF, WOFF2)."),
         };
     }
 

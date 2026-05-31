@@ -20,3 +20,7 @@ contents genuinely match its extension — regenerate them with `python3 tools/m
 | `hello.srt` | SubRip subtitles | Subtitle | WebVTT, SSA/ASS, YouTube SBV |
 | `hello.sbv` | YouTube SBV subtitles | Subtitle | SubRip, WebVTT, SSA/ASS |
 | `hello.zip` | ZIP archive (3 text files) | Archive | 7-Zip, TAR, TAR.GZ |
+| `hello.ttf` | TrueType font (one box glyph) | Font | OTF, WOFF, WOFF2 |
+| `hello.otf` | OpenType/CFF font (one box glyph) | Font | TTF, WOFF, WOFF2 |
+| `hello.woff` | WOFF web font (wraps the TTF) | Font | TTF, OTF, WOFF2 |
+| `hello.woff2` | WOFF2 web font (wraps the TTF) | Font | TTF, OTF, WOFF |

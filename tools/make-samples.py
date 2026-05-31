@@ -10,6 +10,10 @@ samples/README.md that records the ground truth for every file.
 The raster PNG, the WAV tone, and the animated GIF are synthesized byte-by-byte; the SVG,
 Markdown, subtitle, and archive files are written as text or ZIP. A built-in SRT<->SBV
 round-trip self-test mirrors the in-app SubtitleConverter so subtitle samples stay valid.
+
+The font samples (TTF/OTF/WOFF/WOFF2) are the one exception to the pure-stdlib rule: they
+use fontTools (and brotli for WOFF2). If those aren't installed the fonts are skipped and
+everything else still regenerates — `pip install fonttools brotli` to include them.
 """
 
 from __future__ import annotations
@@ -265,6 +269,10 @@ contents genuinely match its extension — regenerate them with `python3 tools/m
 | `hello.srt` | SubRip subtitles | Subtitle | WebVTT, SSA/ASS, YouTube SBV |
 | `hello.sbv` | YouTube SBV subtitles | Subtitle | SubRip, WebVTT, SSA/ASS |
 | `hello.zip` | ZIP archive (3 text files) | Archive | 7-Zip, TAR, TAR.GZ |
+| `hello.ttf` | TrueType font (one box glyph) | Font | OTF, WOFF, WOFF2 |
+| `hello.otf` | OpenType/CFF font (one box glyph) | Font | TTF, WOFF, WOFF2 |
+| `hello.woff` | WOFF web font (wraps the TTF) | Font | TTF, OTF, WOFF2 |
+| `hello.woff2` | WOFF2 web font (wraps the TTF) | Font | TTF, OTF, WOFF |
 """
 
 
@@ -432,6 +440,98 @@ def make_mobi() -> str:
     return path
 
 
+# --------------------------------------------------------------------------- Fonts
+
+def make_fonts() -> list[str]:
+    """Generate valid TTF, OTF, WOFF, and WOFF2 samples sharing one simple glyph.
+
+    Unlike the rest of this script, fonts are built with **fontTools** (plus **brotli**
+    for WOFF2) rather than pure stdlib — hand-rolling sfnt/CFF/WOFF/brotli by hand is far
+    more error-prone than using the canonical font library. If fontTools is unavailable
+    the font samples are skipped (everything else still regenerates).
+    """
+    try:
+        from fontTools.fontBuilder import FontBuilder
+        from fontTools.pens.ttGlyphPen import TTGlyphPen
+        from fontTools.pens.t2CharStringPen import T2CharStringPen
+        from fontTools.ttLib import TTFont
+    except ImportError:
+        print("note: fontTools not installed — skipping ttf/otf/woff/woff2 samples "
+              "(pip install fonttools brotli to generate them)")
+        return []
+
+    upm, advance = 1000, 600
+    glyph_order = [".notdef", "U"]
+    cmap = {0x55: "U"}  # the letter 'U', drawn as a simple box
+    names = {
+        "familyName": "Hello UFC", "styleName": "Regular",
+        "uniqueFontIdentifier": "HelloUFC-Regular-1.0",
+        "fullName": "Hello UFC", "psName": "HelloUFC-Regular",
+        "version": "Version 1.0",
+    }
+
+    def draw(pen) -> None:
+        pen.moveTo((100, 0))
+        pen.lineTo((500, 0))
+        pen.lineTo((500, 700))
+        pen.lineTo((100, 700))
+        pen.closePath()
+
+    def metrics() -> dict:
+        return {n: (advance, 100 if n != ".notdef" else 0) for n in glyph_order}
+
+    def common_setup(fb: "FontBuilder") -> None:
+        fb.setupHorizontalMetrics(metrics())
+        fb.setupHorizontalHeader(ascent=800, descent=-200)
+        fb.setupNameTable(names)
+        fb.setupOS2(sTypoAscender=800, sTypoDescender=-200, usWinAscent=800,
+                    usWinDescent=200, sxHeight=500, sCapHeight=700)
+        fb.setupPost()
+
+    ttf_path = os.path.join(SAMPLES_DIR, "hello.ttf")
+    otf_path = os.path.join(SAMPLES_DIR, "hello.otf")
+    woff_path = os.path.join(SAMPLES_DIR, "hello.woff")
+    woff2_path = os.path.join(SAMPLES_DIR, "hello.woff2")
+
+    # TrueType (glyf outlines).
+    fb = FontBuilder(upm, isTTF=True)
+    fb.setupGlyphOrder(glyph_order)
+    fb.setupCharacterMap(cmap)
+    glyfs = {}
+    for name in glyph_order:
+        pen = TTGlyphPen(None)
+        if name != ".notdef":
+            draw(pen)
+        glyfs[name] = pen.glyph()
+    fb.setupGlyf(glyfs)
+    common_setup(fb)
+    fb.save(ttf_path)
+
+    # OpenType/CFF (PostScript outlines) — independently built from the same glyph.
+    fb = FontBuilder(upm, isTTF=False)
+    fb.setupGlyphOrder(glyph_order)
+    fb.setupCharacterMap(cmap)
+    charstrings = {}
+    for name in glyph_order:
+        pen = T2CharStringPen(advance, None)
+        if name != ".notdef":
+            draw(pen)
+        charstrings[name] = pen.getCharString()
+    fb.setupCFF(names["psName"], {"FullName": names["fullName"]}, charstrings, {})
+    common_setup(fb)
+    fb.save(otf_path)
+
+    # Web fonts are the TrueType sfnt re-wrapped (WOFF1 = zlib, WOFF2 = brotli).
+    f = TTFont(ttf_path)
+    f.flavor = "woff"
+    f.save(woff_path)
+    f = TTFont(ttf_path)
+    f.flavor = "woff2"
+    f.save(woff2_path)
+
+    return [ttf_path, otf_path, woff_path, woff2_path]
+
+
 def make_zip() -> str:
     """A ZIP archive containing three small text files — a clearly valid archive sample."""
     path = os.path.join(SAMPLES_DIR, "hello.zip")
@@ -548,6 +648,7 @@ def main() -> None:
         write_text("hello.srt", SRT),
         write_text("hello.sbv", SBV),
         make_zip(),
+        *make_fonts(),
         write_text("README.md", README),
     ]
     for path in made:

@@ -1,7 +1,7 @@
 import Foundation
 
 enum FileCategory: String, CaseIterable, Hashable {
-    case image, audio, video, document, spreadsheet, presentation, subtitle, archive
+    case image, audio, video, document, spreadsheet, presentation, subtitle, archive, font
 
     var displayName: String {
         switch self {
@@ -13,6 +13,7 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .presentation: return "Presentation"
         case .subtitle: return "Subtitle"
         case .archive: return "Archive"
+        case .font: return "Font"
         }
     }
 
@@ -26,6 +27,7 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .presentation: return "rectangle.on.rectangle"
         case .subtitle: return "captions.bubble"
         case .archive: return "archivebox"
+        case .font: return "textformat"
         }
     }
 }
@@ -47,6 +49,8 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
     case srt, ass, vtt, sbv
     // Archive
     case zip, sevenz = "sevenz", tar, targz = "targz"
+    // Font
+    case ttf, otf, woff, woff2
     // RAW Photo (source-only — never a conversion target)
     case cr2, nef, arw, dng
 
@@ -70,6 +74,7 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .pptx, .odp: return .presentation
         case .srt, .ass, .vtt, .sbv: return .subtitle
         case .zip, .sevenz, .tar, .targz: return .archive
+        case .ttf, .otf, .woff, .woff2: return .font
         case .cr2, .nef, .arw, .dng: return .image
         }
     }
@@ -124,6 +129,10 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .sevenz: return "7-Zip"
         case .tar: return "TAR"
         case .targz: return "TAR.GZ"
+        case .ttf: return "TrueType (TTF)"
+        case .otf: return "OpenType (OTF)"
+        case .woff: return "WOFF"
+        case .woff2: return "WOFF2"
         case .cr2: return "Canon RAW (CR2)"
         case .nef: return "Nikon RAW (NEF)"
         case .arw: return "Sony RAW (ARW)"
@@ -182,6 +191,10 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .sevenz: return ["7z"]
         case .tar: return ["tar"]
         case .targz: return ["tgz", "tar.gz"]
+        case .ttf: return ["ttf"]
+        case .otf: return ["otf"]
+        case .woff: return ["woff"]
+        case .woff2: return ["woff2"]
         case .cr2: return ["cr2"]
         case .nef: return ["nef"]
         case .arw: return ["arw"]

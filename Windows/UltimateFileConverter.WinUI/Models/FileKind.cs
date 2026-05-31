@@ -11,6 +11,7 @@ public enum FileCategory
     Presentation,
     Subtitle,
     Archive,
+    Font,
 }
 
 /// <summary>
@@ -36,6 +37,8 @@ public enum FileKind
     Srt, Ass, Vtt, Sbv,
     // Archive
     Zip, SevenZ, Tar, TarGz,
+    // Font
+    Ttf, Otf, Woff, Woff2,
     // RAW Photo (source-only — never a conversion target)
     Cr2, Nef, Arw, Dng,
 }
@@ -66,6 +69,7 @@ public static class Formats
         FileKind.Pptx or FileKind.Odp => FileCategory.Presentation,
         FileKind.Srt or FileKind.Ass or FileKind.Vtt or FileKind.Sbv => FileCategory.Subtitle,
         FileKind.Zip or FileKind.SevenZ or FileKind.Tar or FileKind.TarGz => FileCategory.Archive,
+        FileKind.Ttf or FileKind.Otf or FileKind.Woff or FileKind.Woff2 => FileCategory.Font,
         FileKind.Cr2 or FileKind.Nef or FileKind.Arw or FileKind.Dng => FileCategory.Image,
         _ => FileCategory.Document,
     };
@@ -124,6 +128,10 @@ public static class Formats
         FileKind.SevenZ => "7-Zip",
         FileKind.Tar => "TAR",
         FileKind.TarGz => "TAR.GZ",
+        FileKind.Ttf => "TrueType (TTF)",
+        FileKind.Otf => "OpenType (OTF)",
+        FileKind.Woff => "WOFF",
+        FileKind.Woff2 => "WOFF2",
         FileKind.Cr2 => "Canon RAW (CR2)",
         FileKind.Nef => "Nikon RAW (NEF)",
         FileKind.Arw => "Sony RAW (ARW)",
@@ -182,6 +190,10 @@ public static class Formats
         FileKind.SevenZ => new[] { "7z" },
         FileKind.Tar => new[] { "tar" },
         FileKind.TarGz => new[] { "tgz", "tar.gz" },
+        FileKind.Ttf => new[] { "ttf" },
+        FileKind.Otf => new[] { "otf" },
+        FileKind.Woff => new[] { "woff" },
+        FileKind.Woff2 => new[] { "woff2" },
         FileKind.Cr2 => new[] { "cr2" },
         FileKind.Nef => new[] { "nef" },
         FileKind.Arw => new[] { "arw" },
@@ -223,6 +235,7 @@ public static class Formats
         FileCategory.Presentation => "Presentation",
         FileCategory.Subtitle => "Subtitle",
         FileCategory.Archive => "Archive",
+        FileCategory.Font => "Font",
         _ => category.ToString(),
     };
 
@@ -237,6 +250,7 @@ public static class Formats
         FileCategory.Presentation => "\uE786", // Slideshow
         FileCategory.Subtitle => "\uE7F0",     // ClosedCaption
         FileCategory.Archive => "\uF5ED",      // ZipFolder
+        FileCategory.Font => "\uE8D2",         // Font
         _ => "\uE8A5",
     };
 }

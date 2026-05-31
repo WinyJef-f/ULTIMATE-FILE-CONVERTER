@@ -6,6 +6,7 @@ enum Tool: String, CaseIterable {
     case soffice
     case sevenZip = "7z"
     case calibre = "ebook-convert"
+    case fontforge = "fontforge"
     case cp           // /bin/cp, used for Experimental-mode file copies
     case native       // Sentinel: dispatched in-process to NativeConverter, no subprocess
 
@@ -50,6 +51,8 @@ enum Tool: String, CaseIterable {
             return ["/Applications/LibreOffice.app/Contents/MacOS/soffice"]
         case .calibre:
             return ["/Applications/calibre.app/Contents/MacOS/ebook-convert"]
+        case .fontforge:
+            return ["/Applications/FontForge.app/Contents/MacOS/FontForge"]
         default:
             return []
         }
