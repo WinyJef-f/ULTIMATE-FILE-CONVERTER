@@ -4,7 +4,7 @@
 ; Sensible defaults are provided so the script can also be opened directly in the Inno IDE.
 
 #ifndef AppVersion
-  #define AppVersion "1.0.1"
+  #define AppVersion "1.1.0"
 #endif
 #ifndef PublishDir
   #define PublishDir "..\..\..\dist\windows\publish"
@@ -38,9 +38,15 @@ WizardStyle=modern
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 PrivilegesRequired=admin
+LicenseFile=resources\license.rtf
+InfoAfterFile=resources\readme.rtf
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Messages]
+WelcomeLabel1=Welcome to ULTIMATE-FILE-CONVERTER
+WelcomeLabel2=ULTIMATE-FILE-CONVERTER converts files between 40+ formats — images, audio, video, documents, spreadsheets, presentations, subtitles, archives, e-books, and fonts — entirely on your device, with no network calls or uploads.%n%nOn first launch, the app will offer to install the required conversion tools (FFmpeg, ImageMagick, MuPDF, Pandoc, LibreOffice, 7-Zip, Calibre, FontForge) via winget. Windows may prompt for permission per package.%n%nClick Next to continue.
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"

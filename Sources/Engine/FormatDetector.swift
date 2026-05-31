@@ -12,6 +12,9 @@ enum FormatDetector {
     }
 
     static func detectByExtension(url: URL) -> FileKind? {
+        // Check compound extensions before falling back to pathExtension (which only sees the last component).
+        if url.lastPathComponent.lowercased().hasSuffix(".tar.gz") { return .targz }
+
         let ext = url.pathExtension.lowercased()
         guard !ext.isEmpty else { return nil }
         return FileKind.allCases.first { $0.recognizedExtensions.contains(ext) }

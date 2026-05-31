@@ -47,6 +47,15 @@ public static class ToolRunner
                 continue;
             }
 
+            // SBV ⇄ SRT bridge is handled in-process — no subprocess.
+            if (step.Tool == Tool.Subtitle)
+            {
+                SubtitleConverter.Run(step.ResolveArguments());
+                last = new ProcessResult(0, string.Empty, string.Empty);
+                cancellationToken.ThrowIfCancellationRequested();
+                continue;
+            }
+
             var executable = ResolveExecutable(step.Tool) ?? throw new ToolNotFoundException(step.Tool);
             last = await RunAsync(executable, step.ResolveArguments(), cancellationToken).ConfigureAwait(false);
             if (!last.Success) return last;
@@ -101,7 +110,10 @@ public static class ToolRunner
         return new ProcessResult(process.ExitCode, stdout, stderr);
     }
 
-    public static bool IsAvailable(Tool tool) => tool == Tool.Copy || ResolveExecutable(tool) is not null;
+    public static bool IsAvailable(Tool tool) =>
+        tool is Tool.Copy or Tool.Subtitle || ResolveExecutable(tool) is not null;
+
+    // SevenZip has no special in-process sentinel — fall through to the normal executable lookup.
 
     /// <summary>
     /// Locates a tool's executable. Search order: process cache, PATH, the winget shim
@@ -110,7 +122,8 @@ public static class ToolRunner
     /// </summary>
     public static string? ResolveExecutable(Tool tool)
     {
-        if (tool == Tool.Copy) return "<copy>";
+        if (tool is Tool.Copy) return "<copy>";
+        if (tool is Tool.Subtitle) return "<subtitle>";
         if (ResolvedCache.TryGetValue(tool, out var cached) && System.IO.File.Exists(cached)) return cached;
 
         var exe = tool.ExecutableName();
@@ -187,6 +200,18 @@ public static class ToolRunner
                 yield return System.IO.Path.Combine(localAppData, "Pandoc", "pandoc.exe");
                 yield return System.IO.Path.Combine(programFiles, "Pandoc", "pandoc.exe");
                 break;
+            case Tool.SevenZip:
+                yield return System.IO.Path.Combine(programFiles, "7-Zip", "7z.exe");
+                yield return System.IO.Path.Combine(programFilesX86, "7-Zip", "7z.exe");
+                break;
+            case Tool.Calibre:
+                yield return System.IO.Path.Combine(programFiles, "Calibre2", "ebook-convert.exe");
+                yield return System.IO.Path.Combine(programFilesX86, "Calibre2", "ebook-convert.exe");
+                break;
+            case Tool.Fontforge:
+                yield return System.IO.Path.Combine(programFiles, "FontForgeBuilds", "bin", "fontforge.exe");
+                yield return System.IO.Path.Combine(programFilesX86, "FontForgeBuilds", "bin", "fontforge.exe");
+                break;
         }
     }
 
@@ -216,6 +241,21 @@ public static class ToolRunner
             case Tool.Soffice:
                 yield return System.IO.Path.Combine(programFiles, "LibreOffice");
                 yield return System.IO.Path.Combine(programFilesX86, "LibreOffice");
+                break;
+            case Tool.SevenZip:
+                yield return System.IO.Path.Combine(programFiles, "7-Zip");
+                yield return System.IO.Path.Combine(programFilesX86, "7-Zip");
+                yield return wingetPackages;
+                break;
+            case Tool.Calibre:
+                yield return System.IO.Path.Combine(programFiles, "Calibre2");
+                yield return System.IO.Path.Combine(programFilesX86, "Calibre2");
+                yield return wingetPackages;
+                break;
+            case Tool.Fontforge:
+                yield return System.IO.Path.Combine(programFiles, "FontForgeBuilds");
+                yield return System.IO.Path.Combine(programFilesX86, "FontForgeBuilds");
+                yield return wingetPackages;
                 break;
         }
     }

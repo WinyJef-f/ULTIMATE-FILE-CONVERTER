@@ -14,9 +14,12 @@ namespace UltimateFileConverter.WinUI.ViewModels;
 /// </summary>
 public sealed class MainViewModel : INotifyPropertyChanged
 {
-    private const int MaxHistory = 100;
+    private const int MaxRecentHistory = 25;
+    private const int MaxFullHistory = 10_000;
 
     private ConversionSettings _settings;
+    /// <summary>Full history log used by stats. Survives "Clear History". Plain list, not shown in UI directly.</summary>
+    private List<HistoryEntry> _fullHistory = new();
     private FileKind? _targetFormat;
     private bool _isConverting;
     private CancellationTokenSource? _cts;
@@ -29,6 +32,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             History.Add(entry);
         }
+        _fullHistory = HistoryStore.LoadFull();
         History.CollectionChanged += (_, _) => RaisePropertyChanged(nameof(ShowEmptyState));
     }
 
@@ -288,6 +292,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
         RaiseQueueDerived();
     }
 
+    /// <summary>Resets a failed item to pending and immediately starts (or continues) conversion.</summary>
+    public async Task RetryItemAsync(QueueItem item)
+    {
+        var existing = Queue.FirstOrDefault(i => i.Id == item.Id);
+        if (existing is null || !existing.IsFailed) return;
+        existing.ErrorMessage = null;
+        existing.Status = QueueItemStatus.Pending;
+        RaiseQueueDerived();
+        if (!IsConverting)
+            await ConvertAsync();
+    }
+
     private async Task ConvertItemAsync(System.Guid id, CancellationToken token)
     {
         if (token.IsCancellationRequested) return;
@@ -339,22 +355,39 @@ public sealed class MainViewModel : INotifyPropertyChanged
         item.ErrorMessage = success ? null : message;
         item.Status = success ? QueueItemStatus.Done : QueueItemStatus.Failed;
 
+        long bytes = 0;
+        try { bytes = new System.IO.FileInfo(item.Path).Length; } catch { }
+
         AddHistoryEntry(HistoryEntry.Create(
-            item.Path, item.SourceKind, success ? output : null, item.TargetKind, success, success ? null : message));
+            item.Path, item.SourceKind, success ? output : null, item.TargetKind, success, success ? null : message, bytes));
         RaiseQueueDerived();
     }
+
+    public ConversionStats Stats => ConversionStats.Compute(_fullHistory);
 
     private string ComputeOutputPath(QueueItem item)
     {
         var dir = _settings.HasUsableCustomFolder
             ? _settings.CustomOutputFolderPath!
             : System.IO.Path.GetDirectoryName(item.Path) ?? System.IO.Directory.GetCurrentDirectory();
-        var baseName = System.IO.Path.GetFileNameWithoutExtension(item.Path);
+        var baseName = GetBaseName(item.Path);
         return System.IO.Path.Combine(dir, $"{baseName}.{item.TargetKind.CanonicalExtension()}");
+    }
+
+    /// <summary>
+    /// Returns the filename without extension, stripping compound extensions (e.g. .tar.gz)
+    /// so the output is "file.zip" rather than "file.tar.zip".
+    /// </summary>
+    private static string GetBaseName(string path)
+    {
+        var name = System.IO.Path.GetFileName(path);
+        if (name.EndsWith(".tar.gz", System.StringComparison.OrdinalIgnoreCase)) return name[..^7];
+        return System.IO.Path.GetFileNameWithoutExtension(path);
     }
 
     // MARK: - History
 
+    /// <summary>Clears recent history shown in the main view. Full history (and stats) are unaffected.</summary>
     public void ClearHistory()
     {
         History.Clear();
@@ -364,17 +397,34 @@ public sealed class MainViewModel : INotifyPropertyChanged
         RaisePropertyChanged(nameof(ShowEmptyState));
     }
 
+    /// <summary>Clears the full history log, resetting all stats.</summary>
+    public void ClearFullHistory()
+    {
+        _fullHistory.Clear();
+        HistoryStore.SaveFull(_fullHistory);
+        RaisePropertyChanged(nameof(FullHistoryCount));
+    }
+
+    public int FullHistoryCount => _fullHistory.Count;
+
     private void AddHistoryEntry(HistoryEntry entry)
     {
+        // Recent (shown in main view)
         History.Insert(0, entry);
-        while (History.Count > MaxHistory)
-        {
+        while (History.Count > MaxRecentHistory)
             History.RemoveAt(History.Count - 1);
-        }
         HistoryStore.Save(History);
+
+        // Full (used for stats, persists across recent clears)
+        _fullHistory.Insert(0, entry);
+        while (_fullHistory.Count > MaxFullHistory)
+            _fullHistory.RemoveAt(_fullHistory.Count - 1);
+        HistoryStore.SaveFull(_fullHistory);
+
         RaisePropertyChanged(nameof(HasHistory));
         RaisePropertyChanged(nameof(HistoryCountText));
         RaisePropertyChanged(nameof(ShowEmptyState));
+        RaisePropertyChanged(nameof(FullHistoryCount));
     }
 
     // MARK: - Helpers

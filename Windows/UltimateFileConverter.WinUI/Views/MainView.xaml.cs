@@ -42,15 +42,51 @@ public sealed partial class MainView : UserControl
         if (_checkedFirstRun) return;
         _checkedFirstRun = true;
 
-        if (!_dependencyService.ShouldOfferFirstRunSetup()) return;
+        if (_dependencyService.ShouldOfferFirstRunSetup())
+        {
+            try
+            {
+                var dialog = new DependencyDialog(_dependencyService) { XamlRoot = XamlRoot };
+                await dialog.ShowAsync();
+            }
+            catch
+            {
+                // First-run setup is optional; ignore failures to present it.
+            }
+        }
+
+        _ = CheckForUpdatesAsync();
+    }
+
+    private async System.Threading.Tasks.Task CheckForUpdatesAsync()
+    {
         try
         {
-            var dialog = new DependencyDialog(_dependencyService) { XamlRoot = XamlRoot };
-            await dialog.ShowAsync();
+            var result = await UpdateChecker.CheckAsync().ConfigureAwait(true);
+            if (!result.IsUpdateAvailable || result.TagName is null || result.HtmlUrl is null) return;
+
+            var dialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                Title = "Update Available",
+                Content = $"Version {result.TagName} is available on GitHub.",
+                CloseButtonText = "OK",
+                PrimaryButtonText = "Take Me There",
+            };
+
+            var choice = await dialog.ShowAsync();
+            if (choice == ContentDialogResult.Primary)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(result.HtmlUrl) { UseShellExecute = true });
+                }
+                catch { }
+            }
         }
         catch
         {
-            // First-run setup is optional; ignore failures to present it.
+            // Silent — update check is best-effort on startup.
         }
     }
 
@@ -133,12 +169,21 @@ public sealed partial class MainView : UserControl
 
     private async void Settings_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new SettingsDialog(ViewModel.Settings, _windowHandle) { XamlRoot = XamlRoot };
+        var dialog = new SettingsDialog(
+            ViewModel.Settings, _windowHandle,
+            ViewModel.FullHistoryCount, ViewModel.ClearFullHistory)
+        { XamlRoot = XamlRoot };
         var result = await dialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
         {
             ViewModel.ApplySettings(dialog.Result);
         }
+    }
+
+    private async void Stats_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new StatsDialog(ViewModel.Stats) { XamlRoot = XamlRoot };
+        await dialog.ShowAsync();
     }
 
     private async void Tools_Click(object sender, RoutedEventArgs e)
@@ -168,11 +213,18 @@ public sealed partial class MainView : UserControl
             flyout.Items.Add(new MenuFlyoutSeparator());
         }
 
-        if (item.IsFailed && !string.IsNullOrEmpty(item.ErrorMessage))
+        if (item.IsFailed)
         {
-            var copy = new MenuFlyoutItem { Text = "Copy error message" };
-            copy.Click += (_, _) => CopyText(item.ErrorMessage!);
-            flyout.Items.Add(copy);
+            var retry = new MenuFlyoutItem { Text = "Retry" };
+            retry.Click += async (_, _) => await ViewModel.RetryItemAsync(item);
+            flyout.Items.Add(retry);
+
+            if (!string.IsNullOrEmpty(item.ErrorMessage))
+            {
+                var copy = new MenuFlyoutItem { Text = "Copy error message" };
+                copy.Click += (_, _) => CopyText(item.ErrorMessage!);
+                flyout.Items.Add(copy);
+            }
 
             flyout.Items.Add(new MenuFlyoutSeparator());
         }

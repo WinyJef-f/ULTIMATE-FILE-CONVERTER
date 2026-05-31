@@ -1,7 +1,7 @@
 import Foundation
 
 enum FileCategory: String, CaseIterable, Hashable {
-    case image, audio, video, document, spreadsheet, presentation
+    case image, audio, video, document, spreadsheet, presentation, subtitle, archive, font
 
     var displayName: String {
         switch self {
@@ -11,6 +11,9 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .document: return "Document"
         case .spreadsheet: return "Spreadsheet"
         case .presentation: return "Presentation"
+        case .subtitle: return "Subtitle"
+        case .archive: return "Archive"
+        case .font: return "Font"
         }
     }
 
@@ -22,6 +25,9 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .document: return "doc.text"
         case .spreadsheet: return "tablecells"
         case .presentation: return "rectangle.on.rectangle"
+        case .subtitle: return "captions.bubble"
+        case .archive: return "archivebox"
+        case .font: return "textformat"
         }
     }
 }
@@ -34,22 +40,42 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
     // Video
     case mp4, mov, mkv, webm, avi
     // Document
-    case pdf, docx, doc, odt, rtf, html, md, epub, txt, tex
+    case pdf, docx, doc, odt, rtf, html, md, epub, txt, tex, azw3, mobi
     // Spreadsheet
     case xlsx, ods, csv
     // Presentation
     case pptx, odp
+    // Subtitle
+    case srt, ass, vtt, sbv
+    // Archive
+    case zip, sevenz = "sevenz", tar, targz = "targz"
+    // Font
+    case ttf, otf, woff, woff2
+    // RAW Photo (source-only — never a conversion target)
+    case cr2, nef, arw, dng
 
     var id: String { rawValue }
+
+    /// True for RAW camera formats that can only be a conversion source, never a target.
+    var isSourceOnly: Bool {
+        switch self {
+        case .cr2, .nef, .arw, .dng: return true
+        default: return false
+        }
+    }
 
     var category: FileCategory {
         switch self {
         case .jpeg, .png, .webp, .heic, .avif, .gif, .bmp, .tiff, .svg, .ico: return .image
         case .mp3, .wav, .flac, .aac, .m4a, .ogg, .opus, .aiff: return .audio
         case .mp4, .mov, .mkv, .webm, .avi: return .video
-        case .pdf, .docx, .doc, .odt, .rtf, .html, .md, .epub, .txt, .tex: return .document
+        case .pdf, .docx, .doc, .odt, .rtf, .html, .md, .epub, .txt, .tex, .azw3, .mobi: return .document
         case .xlsx, .ods, .csv: return .spreadsheet
         case .pptx, .odp: return .presentation
+        case .srt, .ass, .vtt, .sbv: return .subtitle
+        case .zip, .sevenz, .tar, .targz: return .archive
+        case .ttf, .otf, .woff, .woff2: return .font
+        case .cr2, .nef, .arw, .dng: return .image
         }
     }
 
@@ -88,11 +114,29 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .epub: return "EPUB"
         case .txt: return "Plain Text"
         case .tex: return "LaTeX"
+        case .azw3: return "Kindle (AZW3)"
+        case .mobi: return "Mobipocket (MOBI)"
         case .xlsx: return "Excel (.xlsx)"
         case .ods: return "OpenDocument Sheet"
         case .csv: return "CSV"
         case .pptx: return "PowerPoint (.pptx)"
         case .odp: return "OpenDocument Pres."
+        case .srt: return "SubRip"
+        case .ass: return "SSA/ASS"
+        case .vtt: return "WebVTT"
+        case .sbv: return "YouTube SBV"
+        case .zip: return "ZIP"
+        case .sevenz: return "7-Zip"
+        case .tar: return "TAR"
+        case .targz: return "TAR.GZ"
+        case .ttf: return "TrueType (TTF)"
+        case .otf: return "OpenType (OTF)"
+        case .woff: return "WOFF"
+        case .woff2: return "WOFF2"
+        case .cr2: return "Canon RAW (CR2)"
+        case .nef: return "Nikon RAW (NEF)"
+        case .arw: return "Sony RAW (ARW)"
+        case .dng: return "DNG"
         }
     }
 
@@ -132,16 +176,36 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .epub: return ["epub"]
         case .txt: return ["txt", "text"]
         case .tex: return ["tex", "latex"]
+        case .azw3: return ["azw3"]
+        case .mobi: return ["mobi"]
         case .xlsx: return ["xlsx"]
         case .ods: return ["ods"]
         case .csv: return ["csv"]
         case .pptx: return ["pptx"]
         case .odp: return ["odp"]
+        case .srt: return ["srt"]
+        case .ass: return ["ass", "ssa"]
+        case .vtt: return ["vtt"]
+        case .sbv: return ["sbv"]
+        case .zip: return ["zip"]
+        case .sevenz: return ["7z"]
+        case .tar: return ["tar"]
+        case .targz: return ["tgz", "tar.gz"]
+        case .ttf: return ["ttf"]
+        case .otf: return ["otf"]
+        case .woff: return ["woff"]
+        case .woff2: return ["woff2"]
+        case .cr2: return ["cr2"]
+        case .nef: return ["nef"]
+        case .arw: return ["arw"]
+        case .dng: return ["dng"]
         }
     }
 
     /// Extension used when writing an output file.
     var canonicalExtension: String {
-        recognizedExtensions.first ?? rawValue
+        // targz uses "tar.gz" (compound) as its canonical output extension rather than "tgz".
+        if self == .targz { return "tar.gz" }
+        return recognizedExtensions.first ?? rawValue
     }
 }

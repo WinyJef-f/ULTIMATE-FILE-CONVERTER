@@ -53,6 +53,9 @@
                         ToolTipService.ToolTip="Remove all files from the queue">
                     <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE74D;" FontSize="15" />
                 </Button>
+                <Button Click="Stats_Click" ToolTipService.ToolTip="Conversion stats">
+                    <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE9D9;" FontSize="15" />
+                </Button>
                 <Button Click="Tools_Click" ToolTipService.ToolTip="Set up conversion tools (winget)">
                     <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE90F;" FontSize="15" />
                 </Button>
@@ -75,10 +78,9 @@
         </Grid>
 
         <!-- ======================= Empty state ======================= -->
-        <Grid Grid.Row="1" Padding="24"
+        <Grid Grid.Row="1" Padding="20"
               Visibility="{x:Bind ViewModel.ShowEmptyState, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-            <Grid x:Name="EmptyDropZone" MaxWidth="640" MaxHeight="380"
-                  HorizontalAlignment="Center" VerticalAlignment="Center"
+            <Grid x:Name="EmptyDropZone"
                   Background="Transparent" Tapped="DropZone_Tapped">
                 <Rectangle RadiusX="14" RadiusY="14" StrokeThickness="2" StrokeDashArray="6,4"
                            Stroke="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -96,7 +98,7 @@
         <!-- ======================= Content state ======================= -->
         <ScrollViewer Grid.Row="1" Padding="20"
                       Visibility="{x:Bind ViewModel.ShowEmptyState, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-            <StackPanel Spacing="18" MaxWidth="900" HorizontalAlignment="Center">
+            <StackPanel Spacing="18">
 
                 <!-- compact drop zone -->
                 <Grid x:Name="CompactDropZone" Background="Transparent" Tapped="DropZone_Tapped" Height="56">

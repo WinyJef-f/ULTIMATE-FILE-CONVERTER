@@ -7,7 +7,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="1.0.2"
+VERSION="1.1.0"
 BUNDLE_ID="com.jeffreyheiler.UltimateFileConverter"
 APP_NAME="ULTIMATE-FILE-CONVERTER"
 
@@ -44,10 +44,7 @@ if [[ ! -d "$RELEASE_APP" ]]; then
 fi
 echo "    .app at $RELEASE_APP ($(du -sh "$RELEASE_APP" | cut -f1))"
 
-echo "==> Bundling tools (ffmpeg / magick / pandoc / gs / rsvg-convert / LibreOffice) into .app ..."
-"$PROJECT_DIR/tools/bundle-tools.sh" "$RELEASE_APP"
-
-echo "==> Staging payload..."
+echo "==> Staging payload (tools installed on first launch via Homebrew — not bundled)..."
 PAYLOAD_ROOT="$SCRATCH/payload"
 mkdir -p "$PAYLOAD_ROOT/Applications"
 cp -R "$RELEASE_APP" "$PAYLOAD_ROOT/Applications/"

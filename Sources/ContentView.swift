@@ -4,6 +4,8 @@ import AppKit
 struct ContentView: View {
     @EnvironmentObject var vm: AppViewModel
     @Binding var showSettings: Bool
+    @Binding var showSetup: Bool
+    @State private var showDashboard = false
 
     var body: some View {
         Group {
@@ -16,7 +18,12 @@ struct ContentView: View {
         .frame(minWidth: 640, idealWidth: 760, minHeight: 520, idealHeight: 680)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showSettings) {
-            SettingsSheet(settings: $vm.settings)
+            SettingsSheet(settings: $vm.settings,
+                          fullHistoryCount: vm.fullHistory.count,
+                          onClearFullHistory: { vm.clearFullHistory() })
+        }
+        .sheet(isPresented: $showDashboard) {
+            DashboardSheet(stats: vm.stats)
         }
     }
 
@@ -89,6 +96,9 @@ struct ContentView: View {
                         },
                         onReveal: { url in
                             NSWorkspace.shared.activateFileViewerSelecting([url])
+                        },
+                        onRetry: {
+                            vm.retryItem(item)
                         }
                     )
                     .transition(.asymmetric(
@@ -166,6 +176,24 @@ struct ContentView: View {
 
         ToolbarItem(placement: .automatic) {
             Button {
+                showDashboard = true
+            } label: {
+                Label("Stats", systemImage: "chart.bar")
+            }
+            .help("Conversion stats")
+        }
+
+        ToolbarItem(placement: .automatic) {
+            Button {
+                showSetup = true
+            } label: {
+                Label("Conversion Tools", systemImage: "wrench.and.screwdriver")
+            }
+            .help("View and install conversion tools")
+        }
+
+        ToolbarItem(placement: .automatic) {
+            Button {
                 showSettings = true
             } label: {
                 Label("Settings", systemImage: "gearshape")
@@ -214,6 +242,6 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(showSettings: .constant(false))
+    ContentView(showSettings: .constant(false), showSetup: .constant(false))
         .environmentObject(AppViewModel())
 }

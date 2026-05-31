@@ -29,9 +29,11 @@ enum NativeConverter {
     // MARK: - Dispatch
 
     /// Argument template encoding:
-    ///   ["image", "{INPUT}", "{OUTPUT}", quality, targetKindRaw]
-    ///   ["svg",   "{INPUT}", "{OUTPUT}", quality, targetKindRaw]
-    ///   ["pdf",   "{INPUT}", "{OUTPUT}", dpi, quality, targetKindRaw]
+    ///   ["image",   "{INPUT}", "{OUTPUT}", quality, targetKindRaw]
+    ///   ["svg",     "{INPUT}", "{OUTPUT}", quality, targetKindRaw]
+    ///   ["pdf",     "{INPUT}", "{OUTPUT}", dpi, quality, targetKindRaw]
+    ///   ["sbv2srt", "{INPUT}", "{OUTPUT}"]
+    ///   ["srt2sbv", "{INPUT}", "{OUTPUT}"]
     /// Returns a synthetic ProcessResult so ToolRunner's caller doesn't have to special-case.
     static func run(arguments: [String]) async throws -> ProcessResult {
         guard let action = arguments.first else {
@@ -57,6 +59,10 @@ enum NativeConverter {
             let quality = parseInt(arguments, at: 4, default: 85)
             let target = parseKind(arguments, at: 5)
             try rasterizePDF(source: input, target: output, targetKind: target, dpi: dpi, quality: quality)
+        case "sbv2srt":
+            try SubtitleConverter.sbvToSRT(input: input, output: output)
+        case "srt2sbv":
+            try SubtitleConverter.srtToSBV(input: input, output: output)
         default:
             throw NativeError.invalidStep("unknown action: \(action)")
         }

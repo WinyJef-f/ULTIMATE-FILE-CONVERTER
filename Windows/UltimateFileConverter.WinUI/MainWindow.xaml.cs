@@ -33,22 +33,28 @@ public sealed partial class MainWindow : Window
             var ico = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Assets", "app.ico");
             if (System.IO.File.Exists(ico)) appWindow.SetIcon(ico);
 
-            // Lock the window to a 900×900 logical-pixel square, scaled for display DPI.
+            // Match the macOS window proportions: ideal 760×680, resizable down to 640×520.
+            // Sizes are in physical pixels, so scale by the display DPI.
             var dpi = GetDpiForWindow(hwnd);
-            var side = (int)(900 * dpi / 96.0);
-            appWindow.Resize(new Windows.Graphics.SizeInt32(side, side));
+            var scale = dpi / 96.0;
+            var width = (int)(760 * scale);
+            var height = (int)(680 * scale);
+            appWindow.Resize(new Windows.Graphics.SizeInt32(width, height));
 
             // Center on the nearest display.
             var displayArea = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(
                 id, Microsoft.UI.Windowing.DisplayAreaFallback.Nearest);
             var work = displayArea.WorkArea;
             appWindow.Move(new Windows.Graphics.PointInt32(
-                work.X + (work.Width - side) / 2,
-                work.Y + (work.Height - side) / 2));
+                work.X + (work.Width - width) / 2,
+                work.Y + (work.Height - height) / 2));
 
-            // Prevent the user from resizing to a non-square or off-center state.
+            // Resizable, mirroring the macOS minimum window size.
             if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
-                presenter.IsResizable = false;
+            {
+                presenter.IsResizable = true;
+                presenter.IsMaximizable = true;
+            }
         }
         catch
         {

@@ -25,10 +25,18 @@ final class AppViewModel: ObservableObject {
     }
 
     // MARK: - History (auto-persisted)
+
+    /// Recent conversions shown in the main view. Capped at maxRecentHistory.
+    /// Cleared by "Clear History" in the main view.
     @Published private(set) var history: [HistoryEntry] = []
 
+    /// Full log used by the stats dashboard. Survives "Clear History".
+    /// Only cleared explicitly from Settings.
+    @Published private(set) var fullHistory: [HistoryEntry] = []
+
     private var conversionTask: Task<Void, Never>?
-    private let maxHistory = 100
+    private let maxRecentHistory = 25
+    private let maxFullHistory = 10_000
 
     // MARK: - Init
 
@@ -40,7 +48,7 @@ final class AppViewModel: ObservableObject {
         } else {
             self.settings = ConversionSettings()
         }
-        loadHistory()
+        loadHistories()
     }
 
     // MARK: - Queue management
@@ -154,6 +162,16 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    /// Resets a failed item to pending and immediately starts (or continues) conversion.
+    func retryItem(_ item: QueueItem) {
+        guard let idx = queue.firstIndex(where: { $0.id == item.id }),
+              queue[idx].status.isFailed else { return }
+        queue[idx].status = .pending
+        if !isConverting {
+            startConversion()
+        }
+    }
+
     private func runConversion() async {
         isConverting = true
         defer {
@@ -221,16 +239,20 @@ final class AppViewModel: ObservableObject {
                 queue[idx].status = .failed(message: message ?? "Unknown error")
             }
         }
+        let bytes = ((try? FileManager.default.attributesOfItem(atPath: item.url.path)) ?? [:])[FileAttributeKey.size] as? Int ?? 0
         let entry = HistoryEntry(
             sourceURL: item.url,
             sourceKind: item.sourceKind,
             outputURL: success ? output : nil,
             outputKind: item.targetKind,
             outcome: success ? .success : .failure,
-            errorMessage: success ? nil : message
+            errorMessage: success ? nil : message,
+            bytesProcessed: bytes
         )
         addHistoryEntry(entry)
     }
+
+    var stats: ConversionStats { ConversionStats.compute(from: fullHistory) }
 
     private func computeOutputURL(for item: QueueItem) -> URL {
         let outputDir: URL
@@ -240,7 +262,14 @@ final class AppViewModel: ObservableObject {
         case .customFolder:
             outputDir = settings.customOutputFolder ?? item.url.deletingLastPathComponent()
         }
-        let baseName = item.url.deletingPathExtension().lastPathComponent
+        let name = item.url.lastPathComponent
+        // Strip compound extensions (e.g., .tar.gz) so the output is "file.zip" not "file.tar.zip".
+        let baseName: String
+        if name.lowercased().hasSuffix(".tar.gz") {
+            baseName = String(name.dropLast(".tar.gz".count))
+        } else {
+            baseName = item.url.deletingPathExtension().lastPathComponent
+        }
         return outputDir
             .appendingPathComponent(baseName)
             .appendingPathExtension(item.targetKind.canonicalExtension)
@@ -248,48 +277,80 @@ final class AppViewModel: ObservableObject {
 
     // MARK: - History
 
+    /// Clears recent history shown in the main view. Full history (and stats) are unaffected.
     func clearHistory() {
         history = []
-        saveHistory()
+        saveRecentHistory()
+    }
+
+    /// Clears the full history log. This resets all stats.
+    func clearFullHistory() {
+        fullHistory = []
+        saveFullHistory()
     }
 
     private func addHistoryEntry(_ entry: HistoryEntry) {
         history.insert(entry, at: 0)
-        if history.count > maxHistory {
-            history = Array(history.prefix(maxHistory))
+        if history.count > maxRecentHistory {
+            history = Array(history.prefix(maxRecentHistory))
         }
-        saveHistory()
+        saveRecentHistory()
+
+        fullHistory.insert(entry, at: 0)
+        if fullHistory.count > maxFullHistory {
+            fullHistory = Array(fullHistory.prefix(maxFullHistory))
+        }
+        saveFullHistory()
     }
 
-    private func loadHistory() {
+    private func loadHistories() {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        guard let data = try? Data(contentsOf: Self.historyFileURL),
-              let loaded = try? decoder.decode([HistoryEntry].self, from: data) else {
-            return
+        if let data = try? Data(contentsOf: Self.recentHistoryFileURL),
+           let loaded = try? decoder.decode([HistoryEntry].self, from: data) {
+            history = loaded
         }
-        history = loaded
+        if let data = try? Data(contentsOf: Self.fullHistoryFileURL),
+           let loaded = try? decoder.decode([HistoryEntry].self, from: data) {
+            fullHistory = loaded
+        }
     }
 
-    private func saveHistory() {
+    private func saveRecentHistory() {
+        saveEntries(history, to: Self.recentHistoryFileURL)
+    }
+
+    private func saveFullHistory() {
+        saveEntries(fullHistory, to: Self.fullHistoryFileURL)
+    }
+
+    private func saveEntries(_ entries: [HistoryEntry], to url: URL) {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(history) else { return }
-        try? data.write(to: Self.historyFileURL, options: .atomic)
+        guard let data = try? encoder.encode(entries) else { return }
+        try? data.write(to: url, options: .atomic)
     }
 
     // MARK: - Persistence helpers
 
     private static let settingsKey = "ULTIMATE_FILE_CONVERTER_settings_v1"
 
-    private static var historyFileURL: URL {
+    private static var appFolder: URL {
         let appSupport = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)
             .first!
-        let appFolder = appSupport.appendingPathComponent("ULTIMATE-FILE-CONVERTER", isDirectory: true)
-        try? FileManager.default.createDirectory(at: appFolder, withIntermediateDirectories: true)
-        return appFolder.appendingPathComponent("history.json")
+        let folder = appSupport.appendingPathComponent("ULTIMATE-FILE-CONVERTER", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
+    }
+
+    private static var recentHistoryFileURL: URL {
+        appFolder.appendingPathComponent("history.json")
+    }
+
+    private static var fullHistoryFileURL: URL {
+        appFolder.appendingPathComponent("history-full.json")
     }
 
     private func persistSettings() {

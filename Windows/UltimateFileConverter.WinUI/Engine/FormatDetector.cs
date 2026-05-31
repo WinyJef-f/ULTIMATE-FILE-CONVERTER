@@ -14,6 +14,9 @@ public static class FormatDetector
 
     public static FileKind? DetectByExtension(string path)
     {
+        // Check compound extensions before falling back to the single last extension.
+        if (path.EndsWith(".tar.gz", System.StringComparison.OrdinalIgnoreCase)) return FileKind.TarGz;
+
         var ext = System.IO.Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
         if (string.IsNullOrEmpty(ext)) return null;
         foreach (var kind in Formats.All)
@@ -73,6 +76,13 @@ public static class FormatDetector
         if (StartsWith(head, 0x66, 0x4C, 0x61, 0x43)) return FileKind.Flac;  // fLaC
         if (StartsWith(head, 0x1A, 0x45, 0xDF, 0xA3)) return FileKind.Mkv;   // EBML (Matroska/WebM)
         if (StartsWith(head, 0x49, 0x44, 0x33)) return FileKind.Mp3;         // ID3
+
+        // Fonts (sfnt and web font wrappers).
+        if (StartsWith(head, 0x00, 0x01, 0x00, 0x00) || StartsWith(head, 0x74, 0x72, 0x75, 0x65))
+            return FileKind.Ttf;                                              // TrueType sfnt 1.0 / "true"
+        if (StartsWith(head, 0x4F, 0x54, 0x54, 0x4F)) return FileKind.Otf;   // "OTTO" (CFF OpenType)
+        if (StartsWith(head, 0x77, 0x4F, 0x46, 0x46)) return FileKind.Woff;  // "wOFF"
+        if (StartsWith(head, 0x77, 0x4F, 0x46, 0x32)) return FileKind.Woff2; // "wOF2"
 
         return null;
     }

@@ -5,11 +5,29 @@ import AppKit
 struct UltimateFileConverterApp: App {
     @StateObject private var vm = AppViewModel()
     @State private var showSettings = false
+    @State private var showSetup = false
+    @State private var showUpdateAlert = false
+    @State private var updateTagName = ""
+    @State private var updateReleaseURL: URL? = nil
 
     var body: some Scene {
         WindowGroup("ULTIMATE-FILE-CONVERTER") {
-            ContentView(showSettings: $showSettings)
+            ContentView(showSettings: $showSettings, showSetup: $showSetup)
                 .environmentObject(vm)
+                .task { await startup() }
+                .sheet(isPresented: $showSetup) {
+                    SetupSheet { showSetup = false }
+                }
+                .alert("Update Available", isPresented: $showUpdateAlert) {
+                    Button("OK", role: .cancel) {}
+                    Button("Take Me There") {
+                        if let url = updateReleaseURL {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                } message: {
+                    Text("Version \(updateTagName) is available on GitHub.")
+                }
         }
         .windowResizability(.contentMinSize)
         .commands {
@@ -40,6 +58,20 @@ struct UltimateFileConverterApp: App {
                 .keyboardShortcut("r", modifiers: .command)
                 .disabled(!vm.isConverting && (!vm.hasPendingItems || vm.targetFormat == nil))
             }
+        }
+    }
+
+    private func startup() async {
+        // First-run: show Homebrew setup sheet if any tools are missing.
+        if BrewDependencyService.shouldOfferFirstRunSetup {
+            showSetup = true
+        }
+        // Silently check for updates; show alert only if a newer release exists.
+        guard let result = try? await UpdateChecker.check() else { return }
+        if case .available(let tagName, let releaseURL) = result {
+            updateTagName = tagName
+            updateReleaseURL = releaseURL
+            showUpdateAlert = true
         }
     }
 

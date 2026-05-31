@@ -23,6 +23,10 @@ public static class ConversionRouter
     private static readonly HashSet<FileKind> PandocKinds =
         new() { FileKind.Md, FileKind.Html, FileKind.Docx, FileKind.Odt, FileKind.Rtf, FileKind.Epub, FileKind.Txt, FileKind.Tex };
 
+    private static readonly HashSet<FileKind> CalibreFamily =
+        new() { FileKind.Pdf, FileKind.Docx, FileKind.Doc, FileKind.Odt, FileKind.Rtf,
+                FileKind.Html, FileKind.Md, FileKind.Epub, FileKind.Txt, FileKind.Azw3, FileKind.Mobi };
+
     private static HashSet<FileKind> SofficeReadable
     {
         get
@@ -38,11 +42,21 @@ public static class ConversionRouter
         FileKind source, FileKind target, string inputPath, string outputPath, ConversionSettings settings)
     {
         if (source == target) return null;
+        // RAW photo formats are source-only; they are never valid output targets.
+        if (target.IsSourceOnly()) return null;
 
         var src = source.Category();
         var dst = target.Category();
         var q = settings.ImageQuality.ToString();
         var br = settings.AudioBitrate.ToString();
+
+        // --- RAW Photo -> Image via ImageMagick (built-in LibRaw delegate) ---
+        if (source.IsSourceOnly() && dst == FileCategory.Image)
+        {
+            return ConversionPlan.Single(Tool.Magick,
+                new[] { "{INPUT}[0]", "-quality", q, "{OUTPUT}" },
+                inputPath, outputPath);
+        }
 
         // --- SVG source: rasterize at high density via ImageMagick for crispness ---
         if (source == FileKind.Svg && dst == FileCategory.Image)
@@ -142,9 +156,48 @@ public static class ConversionRouter
                 inputPath, outputPath);
         }
 
+        // --- Subtitle -> Subtitle ---
+        // ffmpeg handles srt/ass/vtt directly. SBV has poor ffmpeg support, so it is
+        // bridged through SRT in-process (Tool.Subtitle), then ffmpeg reaches ass/vtt.
+        if (src == FileCategory.Subtitle && dst == FileCategory.Subtitle)
+        {
+            return SubtitleRoute(source, target, inputPath, outputPath);
+        }
+
+        // --- Archive -> Archive via 7-Zip ---
+        // All conversions go through a temp extract-then-recompress pipeline.
+        // tar.gz targets need an extra step: create a .tar first, then gzip it.
+        if (src == FileCategory.Archive && dst == FileCategory.Archive)
+        {
+            return ArchiveRoute(source, target, inputPath, outputPath);
+        }
+
+        // --- Font -> Font via FontForge (TTF, OTF, WOFF, WOFF2) ---
+        // FontForge reads and writes every desktop/web font format and picks the output
+        // format from the file extension. Its scripting one-liner opens the source and
+        // regenerates it as the target — handling outline conversion (TTF⇄OTF) for us.
+        if (src == FileCategory.Font && dst == FileCategory.Font)
+        {
+            return ConversionPlan.Single(Tool.Fontforge,
+                new[] { "-lang=ff", "-c", "Open($1); Generate($2)", "{INPUT}", "{OUTPUT}" },
+                inputPath, outputPath);
+        }
+
         // --- LibreOffice (soffice) family conversions ---
         var soffice = SofficeRoute(source, target, inputPath, outputPath);
         if (soffice is not null) return soffice;
+
+        // --- Calibre: Kindle/e-book conversions (AZW3, MOBI) ---
+        if (CalibreFamily.Contains(source) && (target is FileKind.Azw3 or FileKind.Mobi))
+        {
+            return ConversionPlan.Single(Tool.Calibre,
+                new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath);
+        }
+        if ((source is FileKind.Azw3 or FileKind.Mobi) && CalibreFamily.Contains(target))
+        {
+            return ConversionPlan.Single(Tool.Calibre,
+                new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath);
+        }
 
         // --- Experimental mode: any -> any via raw-byte reinterpretation / file copy ---
         if (settings.WeirdModeEnabled)
@@ -173,6 +226,107 @@ public static class ConversionRouter
             .OrderBy(k => k.Category().ToString(), System.StringComparer.Ordinal)
             .ThenBy(k => k.DisplayName(), System.StringComparer.Ordinal)
             .ToArray();
+    }
+
+    /// <summary>
+    /// Builds a subtitle→subtitle plan. srt/ass/vtt go straight through ffmpeg; SBV is
+    /// translated to/from SRT in-process first (ffmpeg's SBV support is unreliable).
+    /// </summary>
+    private static ConversionPlan SubtitleRoute(FileKind source, FileKind target, string inputPath, string outputPath)
+    {
+        // SBV source: SBV → SRT (in-process), then SRT → target via ffmpeg if needed.
+        if (source == FileKind.Sbv)
+        {
+            if (target == FileKind.Srt)
+            {
+                return ConversionPlan.Single(Tool.Subtitle,
+                    new[] { "sbv2srt", "{INPUT}", "{OUTPUT}" },
+                    inputPath, outputPath);
+            }
+            var srt = System.IO.Path.Combine(AppPathsTemp(), $"{System.Guid.NewGuid():N}.srt");
+            return new ConversionPlan(
+                new ConversionStep(Tool.Subtitle,
+                    new[] { "sbv2srt", "{INPUT}", "{OUTPUT}" },
+                    inputPath, srt),
+                new ConversionStep(Tool.Ffmpeg,
+                    new[] { "-y", "-i", "{INPUT}", "{OUTPUT}" },
+                    srt, outputPath));
+        }
+
+        // SBV target: source → SRT via ffmpeg if needed, then SRT → SBV (in-process).
+        if (target == FileKind.Sbv)
+        {
+            if (source == FileKind.Srt)
+            {
+                return ConversionPlan.Single(Tool.Subtitle,
+                    new[] { "srt2sbv", "{INPUT}", "{OUTPUT}" },
+                    inputPath, outputPath);
+            }
+            var srt = System.IO.Path.Combine(AppPathsTemp(), $"{System.Guid.NewGuid():N}.srt");
+            return new ConversionPlan(
+                new ConversionStep(Tool.Ffmpeg,
+                    new[] { "-y", "-i", "{INPUT}", "{OUTPUT}" },
+                    inputPath, srt),
+                new ConversionStep(Tool.Subtitle,
+                    new[] { "srt2sbv", "{INPUT}", "{OUTPUT}" },
+                    srt, outputPath));
+        }
+
+        // srt ⇄ ass ⇄ vtt: direct ffmpeg.
+        return ConversionPlan.Single(Tool.Ffmpeg,
+            new[] { "-y", "-i", "{INPUT}", "{OUTPUT}" },
+            inputPath, outputPath);
+    }
+
+    /// <summary>
+    /// Extract-then-recompress pipeline via 7-Zip. All format pairs share the same extract
+    /// step; tar.gz targets need a two-step compress (tar first, then gzip).
+    /// </summary>
+    private static ConversionPlan ArchiveRoute(FileKind source, FileKind target, string inputPath, string outputPath)
+    {
+        var extractDir = IntermediateDir();
+
+        // Extract step: 7z x -y {INPUT} -o<extractDir>
+        // The dummy outputPath here is never used in argument substitution (args have no {OUTPUT}).
+        var extractDummy = System.IO.Path.Combine(extractDir, ".done");
+        var extractStep = new ConversionStep(Tool.SevenZip,
+            new[] { "x", "-y", "{INPUT}", $"-o{extractDir}" },
+            inputPath, extractDummy);
+
+        // tar.gz target: 7z can't create .tar.gz in one pass — create .tar then gzip it.
+        if (target == FileKind.TarGz)
+        {
+            var tarTemp = System.IO.Path.Combine(AppPathsTemp(), $"{System.Guid.NewGuid():N}.tar");
+            return new ConversionPlan(
+                extractStep,
+                new ConversionStep(Tool.SevenZip,
+                    new[] { "a", "-ttar", "{OUTPUT}", $"{extractDir}/*", "-r" },
+                    extractDummy, tarTemp),
+                new ConversionStep(Tool.SevenZip,
+                    new[] { "a", "-tgzip", "{OUTPUT}", "{INPUT}" },
+                    tarTemp, outputPath));
+        }
+
+        var formatFlag = target switch
+        {
+            FileKind.Zip => "-tzip",
+            FileKind.SevenZ => "-t7z",
+            FileKind.Tar => "-ttar",
+            _ => "-tzip",
+        };
+        return new ConversionPlan(
+            extractStep,
+            new ConversionStep(Tool.SevenZip,
+                new[] { "a", formatFlag, "{OUTPUT}", $"{extractDir}/*", "-r" },
+                extractDummy, outputPath));
+    }
+
+    /// <summary>Creates and returns a fresh temporary subdirectory for archive extraction.</summary>
+    private static string IntermediateDir()
+    {
+        var dir = System.IO.Path.Combine(AppPathsTemp(), System.Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(dir);
+        return dir;
     }
 
     private static ConversionPlan? SofficeRoute(FileKind source, FileKind target, string inputPath, string outputPath)
@@ -227,7 +381,9 @@ public static class ConversionRouter
                         "-framerate", "10", "-i", "{INPUT}", "-pix_fmt", "yuv420p", "{OUTPUT}" },
                 inputPath, outputPath),
             // No raw decode makes sense for these — copy the bytes under the new extension.
-            _ => ConversionPlan.Single(Tool.Copy, new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath),
+            FileCategory.Document or FileCategory.Spreadsheet or FileCategory.Presentation
+            or FileCategory.Subtitle or FileCategory.Archive or FileCategory.Font or _
+                => ConversionPlan.Single(Tool.Copy, new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath),
         };
     }
 

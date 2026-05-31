@@ -44,4 +44,32 @@ public static class HistoryStore
             // Best-effort; history is non-critical.
         }
     }
+
+    public static List<HistoryEntry> LoadFull()
+    {
+        try
+        {
+            var path = AppPaths.FullHistoryFile;
+            if (!System.IO.File.Exists(path)) return new List<HistoryEntry>();
+            var json = System.IO.File.ReadAllText(path);
+            return JsonSerializer.Deserialize<List<HistoryEntry>>(json, Options) ?? new List<HistoryEntry>();
+        }
+        catch
+        {
+            return new List<HistoryEntry>();
+        }
+    }
+
+    public static void SaveFull(IEnumerable<HistoryEntry> history)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(history.ToList(), Options);
+            System.IO.File.WriteAllText(AppPaths.FullHistoryFile, json);
+        }
+        catch
+        {
+            // Best-effort; history is non-critical.
+        }
+    }
 }
