@@ -1,8 +1,19 @@
 import SwiftUI
 import AppKit
 
+// Handles the NSApplication delegate events that SwiftUI doesn't expose — specifically
+// application(_:open:) for files sent via "Open With" and the right-click context menu.
+class AppDelegate: NSObject, NSApplicationDelegate {
+    weak var viewModel: AppViewModel?
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        viewModel?.addFiles(urls)
+    }
+}
+
 @main
 struct UltimateFileConverterApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var vm = AppViewModel()
     @State private var showSettings = false
     @State private var showSetup = false
@@ -62,6 +73,8 @@ struct UltimateFileConverterApp: App {
     }
 
     private func startup() async {
+        // Wire the delegate so files opened via "Open With" / context menu reach the queue.
+        appDelegate.viewModel = vm
         // First-run: show Homebrew setup sheet if any tools are missing.
         if BrewDependencyService.shouldOfferFirstRunSetup {
             showSetup = true

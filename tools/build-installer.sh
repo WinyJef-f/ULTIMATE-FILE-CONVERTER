@@ -7,7 +7,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 BUNDLE_ID="com.jeffreyheiler.UltimateFileConverter"
 APP_NAME="ULTIMATE-FILE-CONVERTER"
 
@@ -23,7 +23,7 @@ mkdir -p "$DIST_DIR"
 echo "==> Generating Xcode project..."
 /opt/homebrew/bin/xcodegen generate >/dev/null
 
-echo "==> Building Release .app..."
+echo "==> Building Release .app and ufc CLI..."
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
     /usr/bin/xcodebuild \
         -project "$APP_NAME.xcodeproj" \
@@ -37,6 +37,21 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
     exit 1
 }
 
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+    /usr/bin/xcodebuild \
+        -project "$APP_NAME.xcodeproj" \
+        -scheme "ufc" \
+        -configuration Release \
+        -derivedDataPath "$BUILD_DIR" \
+        -destination 'platform=macOS' \
+        build >> "$SCRATCH/xcodebuild.log" 2>&1 || {
+    echo "CLI build FAILED. Tail of log:"
+    tail -20 "$SCRATCH/xcodebuild.log"
+    exit 1
+}
+
+UFC_CLI="$BUILD_DIR/Build/Products/Release/ufc"
+
 RELEASE_APP="$BUILD_DIR/Build/Products/Release/$APP_NAME.app"
 if [[ ! -d "$RELEASE_APP" ]]; then
     echo "ERROR: Release app not found at $RELEASE_APP"
@@ -47,7 +62,17 @@ echo "    .app at $RELEASE_APP ($(du -sh "$RELEASE_APP" | cut -f1))"
 echo "==> Staging payload (tools installed on first launch via Homebrew — not bundled)..."
 PAYLOAD_ROOT="$SCRATCH/payload"
 mkdir -p "$PAYLOAD_ROOT/Applications"
+mkdir -p "$PAYLOAD_ROOT/usr/local/bin"
 cp -R "$RELEASE_APP" "$PAYLOAD_ROOT/Applications/"
+
+# Install the ufc CLI symlink into /usr/local/bin so it's on PATH.
+# The binary lives inside the .app bundle; the symlink is stable across updates.
+if [[ -f "$UFC_CLI" ]]; then
+    cp "$UFC_CLI" "$PAYLOAD_ROOT/usr/local/bin/ufc"
+    echo "    ufc CLI staged at /usr/local/bin/ufc"
+else
+    echo "    WARNING: ufc CLI binary not found at $UFC_CLI — skipping."
+fi
 
 echo "==> Building component pkg (no postinstall — everything is bundled)..."
 COMPONENT_PKG="$SCRATCH/component.pkg"

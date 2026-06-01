@@ -206,6 +206,15 @@ enum ConversionRouter {
                                 inputURL: inputURL, outputURL: outputURL)
         }
 
+        // --- 3D Model -> 3D Model via Assimp (OBJ, STL, GLTF, GLB) ---
+        if src == .model && dst == .model {
+            return ConversionPlan(
+                tool: .assimp,
+                arguments: ["export", "{INPUT}", "{OUTPUT}"],
+                input: inputURL, output: outputURL
+            )
+        }
+
         // --- Font -> Font via FontForge (TTF, OTF, WOFF, WOFF2) ---
         // FontForge reads and writes every desktop/web font format and picks the output
         // format from the file extension. Its scripting one-liner opens the source and
@@ -458,7 +467,7 @@ enum ConversionRouter {
             return rawBytesToAudio(target: target, inputURL: inputURL, outputURL: outputURL)
         case .video:
             return rawBytesToVideo(target: target, inputURL: inputURL, outputURL: outputURL)
-        case .document, .spreadsheet, .presentation, .subtitle, .archive, .font:
+        case .document, .spreadsheet, .presentation, .subtitle, .archive, .font, .model:
             // No "raw decode" makes sense for these — just copy bytes with the new extension.
             return ConversionPlan(
                 tool: .cp,

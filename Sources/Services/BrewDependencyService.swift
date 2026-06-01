@@ -69,6 +69,12 @@ enum BrewDependencyService {
             tool: .fontforge,
             purpose: "Font format conversions (TTF, OTF, WOFF, WOFF2)."
         ),
+        BrewDependency(
+            friendlyName: "Assimp",
+            formula: "assimp",
+            tool: .assimp,
+            purpose: "3D model format conversions (OBJ, STL, GLTF, GLB)."
+        ),
     ]
 
     // MARK: Status

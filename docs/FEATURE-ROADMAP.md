@@ -176,57 +176,75 @@ one sample exception to the make-samples.py pure-stdlib rule).
 - **Risk:** medium–high (resolved). Picking FontForge — one tool on both package managers —
   removed the cross-platform packaging risk that made this stage hard.
 
-## Stage 7 — Right-click "Convert with UFC"
+## Stage 7 — Right-click "Convert with UFC"  ✅ Shipped
 
 **What:** A shell context-menu entry that launches the app pre-loaded with the selected
 file(s).
 
-**Why hard:** OS-level integration plus app changes to accept a launch-time file argument —
-the app currently ignores command-line/open-file input on both platforms.
+**How it shipped:** `tools/windows/installer/setup.iss` gained a `[Registry]` section that
+writes `HKCR\*\shell\ConvertWithUFC\command` and a `[Code]` `NeedsAddPath` helper that
+appends `{app}` to the system PATH. `App.xaml.cs` (Windows) implements single-instance
+activation via `Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey("ufc-main")`;
+a second launch redirects its file argument to the already-open window via
+`OnInstanceActivated` → `MainWindow.EnqueueFiles`. On macOS, `project.yml` was converted to
+an `info.properties` stanza with `CFBundleDocumentTypes` declaring all 60+ supported
+extensions (LSHandlerRank: Alternate), and `App.swift` gained an `AppDelegate` class wired
+via `@NSApplicationDelegateAdaptor` that implements `application(_:open:)` to enqueue
+opened files into the existing `AppViewModel` queue.
 
-- **Windows:** add `[Registry]` entries in `tools/windows/installer/setup.iss`
-  (`HKCR\*\shell\ConvertWithUFC\command = "<app>.exe" "%1"`); implement **single-instance
-  activation** so an already-open window enqueues the file (WinUI `AppInstance`
-  redirect / `GetActivatedEventArgs`). Today `MainWindow` reads no args.
-- **macOS:** declare `CFBundleDocumentTypes` for supported extensions in `project.yml`/
-  Info.plist, handle `onOpenURL` / `application(_:open:)` to enqueue files, and add a Finder
-  **Services** entry (or rely on "Open With"). `App.swift` currently only has menu commands.
-- **Risk:** medium–high. Touches installers and app activation on both platforms; needs the
-  "launch with a file" plumbing that Stage 8 also benefits from.
+- **Windows:** `[Registry]` section in `setup.iss`; `App.xaml.cs` single-instance redirect;
+  `MainWindow.EnqueueFiles` public entry point.
+- **macOS:** `CFBundleDocumentTypes` in `project.yml` info.properties; `AppDelegate` +
+  `application(_:open:)` in `App.swift`.
+- **Risk:** medium–high (resolved). Both installer and activation plumbing landed cleanly.
 
-## Stage 8 — CLI interface for power users
+## Stage 8 — CLI interface for power users  ✅ Shipped
 
 **What:** A terminal command to script conversions headlessly (e.g.
 `ufc convert in.png out.webp --quality 90`, `ufc list-targets in.heic`).
 
-**Why hard:** Requires a headless execution path and a new build/distribution target. The
-conversion engine (`ConversionRouter` + `ToolRunner` + models) is already cleanly separated
-from the UI, which makes this feasible, but it is still a new surface.
+**How it shipped:** On Windows, a new console project `Windows/UltimateFileConverter.CLI/`
+(`ufc.exe`, `net8.0-windows10.0.19041.0`, `SelfContained=false`) uses `<Compile Include>`
+shared-source links to reuse Engine/Models/Services files directly from the WinUI project
+without a class-library refactor. `tools/windows/build-installers.ps1` gained a `dotnet
+publish` step that stages `ufc.exe` into the publish folder alongside the GUI. The Inno
+Setup PATH registry entry (Stage 7) makes `ufc` available in any terminal after install.
+On macOS, `CLI/main.swift` implements the same three-command surface using a
+`DispatchSemaphore` async bridge; `project.yml` gained a `ufc` tool target linking
+`Sources/Engine`, `Sources/Models`, and `CLI/`; `tools/build-installer.sh` builds the `ufc`
+scheme and installs it at `/usr/local/bin/ufc`. `ULTIMATE-FILE-CONVERTER.sln` was updated to
+include the CLI project.
 
-- **macOS:** add a separate CLI target in `project.yml` (and `build-installer.sh`) that links
-  the existing `Engine/` + `Models/` sources; install a `ufc` symlink on `PATH`.
-- **Windows:** the WinUI app is a `WinExe` (no console). Extract the engine into a class
-  library and add a small **console companion** exe (`ufc.exe`); add its folder to `PATH` in
-  the installer. Wire up arg parsing, progress to stdout, and proper exit codes.
-- **Risk:** high. New build targets, packaging, PATH setup, and console/GUI subsystem
-  handling on Windows.
+CLI surface (both platforms):
+```
+ufc convert <input> <output> [--quality N]   # exit 0 success, 1 failure, 2 bad args
+ufc list-targets <input>
+ufc version
+```
 
-## Stage 9 — 3D model conversion: OBJ ↔ STL ↔ GLTF  *(hardest)*
+- **macOS:** new `ufc` XcodeGen target in `project.yml`; `CLI/main.swift`; symlink in `build-installer.sh`.
+- **Windows:** new `UltimateFileConverter.CLI.csproj` + `Program.cs`; `build-installers.ps1` publish step; `.sln` entry.
+- **Risk:** high (resolved). Shared-source approach avoided a full engine-extraction refactor.
+
+## Stage 9 — 3D model conversion: OBJ ↔ STL ↔ GLTF  *(hardest)*  ✅ Shipped
 
 **What:** A new `model` category converting between OBJ, STL, and glTF/GLB.
 
-**Why hardest:** The heaviest dependency and the most finicky conversions. **assimp**
-(`assimp export`, brew `assimp`) is lighter than Blender and the recommended first choice;
-Blender headless (`blender --background --python …`) is the fallback when assimp's glTF
-fidelity is insufficient. Either is a large/awkward dependency, and glTF (geometry +
-materials + textures, `.gltf` vs binary `.glb`) is the trickiest pairing.
+**How it shipped:** New `FileCategory.model` (sfSymbol `"cube"` / Segoe Fluent glyph
+``) and `FileKind`s `obj`, `stl`, `gltf`, `glb` on both platforms. `Tool.assimp`
+(macOS) and `Tool.Assimp` (Windows) were added; macOS resolves from Homebrew paths
+(`/opt/homebrew/bin/assimp`, `/usr/local/bin/assimp`) and installs via `brew install
+assimp`; Windows searches `Program Files\Assimp\bin` and installs via winget
+(`Assimp.Assimp`). The router's `model → model` branch (placed after the font branch) runs
+`assimp export {INPUT} {OUTPUT}` for all pairs. `FormatDetector` on Windows gained GLB
+magic-byte detection (`0x67 0x6C 0x54 0x46` = "glTF"). The macOS `BrewDependencyService`
+and Windows `DependencyService` both list Assimp in their install manifests.
 
-- **Models:** new `FileCategory.model`; new `FileKind`s `obj`, `stl`, `gltf`, `glb`.
-- **Tool wiring:** add `Tool.Assimp` (or `Tool.Blender`) on both platforms — bundling Blender
-  on macOS is very large, so install-on-demand is likely.
-- **Router:** `model → model` via `assimp export {INPUT} {OUTPUT}`; glTF may need texture/
-  material side-files handled.
-- **Risk:** high. Dependency weight + glTF correctness + asset side-files.
+- **Models:** `FileCategory.model`; `FileKind`s `obj`, `stl`, `gltf`, `glb`; both platforms.
+- **Tool wiring:** `Tool.assimp` / `Tool.Assimp`; install-on-demand via Homebrew / winget.
+- **Router:** `assimp export {INPUT} {OUTPUT}` in both `ConversionRouter.swift` and `ConversionRouter.cs`.
+- **FormatDetector:** GLB 4-byte magic sniffing on Windows.
+- **Risk:** high (resolved). Assimp proved sufficient for all four format pairs; Blender fallback was not needed.
 
 ---
 

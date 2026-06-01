@@ -12,22 +12,134 @@ targets:
     sources:
       - path: Sources
       - path: Resources
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: ULTIMATE-FILE-CONVERTER
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: APPL
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.utilities
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHighResolutionCapable: true
+        NSHumanReadableCopyright: "Conversion tools (FFmpeg, Pandoc, LibreOffice, 7-Zip, Calibre, FontForge, Assimp) are installed on demand via Homebrew and retain their own licenses."
+        NSPrincipalClass: NSApplication
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: "Supported File"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeExtensions:
+              - jpg
+              - jpeg
+              - jpe
+              - jfif
+              - png
+              - webp
+              - heic
+              - heif
+              - avif
+              - gif
+              - bmp
+              - tif
+              - tiff
+              - svg
+              - ico
+              - mp3
+              - wav
+              - wave
+              - flac
+              - aac
+              - m4a
+              - ogg
+              - oga
+              - opus
+              - aiff
+              - aif
+              - aifc
+              - mp4
+              - m4v
+              - mov
+              - mkv
+              - webm
+              - avi
+              - pdf
+              - docx
+              - doc
+              - odt
+              - rtf
+              - html
+              - htm
+              - md
+              - markdown
+              - mdown
+              - epub
+              - txt
+              - text
+              - tex
+              - latex
+              - azw3
+              - mobi
+              - xlsx
+              - ods
+              - csv
+              - pptx
+              - odp
+              - srt
+              - ass
+              - ssa
+              - vtt
+              - sbv
+              - zip
+              - tar
+              - tgz
+              - ttf
+              - otf
+              - woff
+              - woff2
+              - cr2
+              - nef
+              - arw
+              - dng
+              - obj
+              - stl
+              - gltf
+              - glb
     settings:
       base:
         PRODUCT_NAME: ULTIMATE-FILE-CONVERTER
         PRODUCT_BUNDLE_IDENTIFIER: com.jeffreyheiler.UltimateFileConverter
-        MARKETING_VERSION: "1.1.0"
-        CURRENT_PROJECT_VERSION: "110"
+        MARKETING_VERSION: "1.2.0"
+        CURRENT_PROJECT_VERSION: "120"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         SWIFT_VERSION: "5.10"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
         ENABLE_HARDENED_RUNTIME: NO
-        GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        INFOPLIST_KEY_CFBundleDisplayName: ULTIMATE-FILE-CONVERTER
-        INFOPLIST_KEY_LSMinimumSystemVersion: "13.0"
-        INFOPLIST_KEY_NSHighResolutionCapable: YES
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
-        INFOPLIST_KEY_NSHumanReadableCopyright: "Conversion tools (FFmpeg, Pandoc, LibreOffice, 7-Zip, Calibre) are installed on demand via Homebrew and retain their own licenses."
+
+  ufc:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/Engine
+      - path: Sources/Models
+        excludes:
+          - QueueItem.swift
+          - HistoryEntry.swift
+          - ConversionStats.swift
+      - path: CLI
+    settings:
+      base:
+        PRODUCT_NAME: ufc
+        PRODUCT_BUNDLE_IDENTIFIER: com.jeffreyheiler.ufc
+        MARKETING_VERSION: "1.2.0"
+        CURRENT_PROJECT_VERSION: "120"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        SWIFT_VERSION: "5.10"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""

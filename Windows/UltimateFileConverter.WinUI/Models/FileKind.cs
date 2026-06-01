@@ -12,6 +12,7 @@ public enum FileCategory
     Subtitle,
     Archive,
     Font,
+    Model,
 }
 
 /// <summary>
@@ -41,6 +42,8 @@ public enum FileKind
     Ttf, Otf, Woff, Woff2,
     // RAW Photo (source-only — never a conversion target)
     Cr2, Nef, Arw, Dng,
+    // 3D Model
+    Obj, Stl, Gltf, Glb,
 }
 
 /// <summary>
@@ -71,6 +74,7 @@ public static class Formats
         FileKind.Zip or FileKind.SevenZ or FileKind.Tar or FileKind.TarGz => FileCategory.Archive,
         FileKind.Ttf or FileKind.Otf or FileKind.Woff or FileKind.Woff2 => FileCategory.Font,
         FileKind.Cr2 or FileKind.Nef or FileKind.Arw or FileKind.Dng => FileCategory.Image,
+        FileKind.Obj or FileKind.Stl or FileKind.Gltf or FileKind.Glb => FileCategory.Model,
         _ => FileCategory.Document,
     };
 
@@ -136,6 +140,10 @@ public static class Formats
         FileKind.Nef => "Nikon RAW (NEF)",
         FileKind.Arw => "Sony RAW (ARW)",
         FileKind.Dng => "DNG",
+        FileKind.Obj => "OBJ",
+        FileKind.Stl => "STL",
+        FileKind.Gltf => "GLTF",
+        FileKind.Glb => "GLB",
         _ => kind.ToString().ToUpperInvariant(),
     };
 
@@ -198,6 +206,10 @@ public static class Formats
         FileKind.Nef => new[] { "nef" },
         FileKind.Arw => new[] { "arw" },
         FileKind.Dng => new[] { "dng" },
+        FileKind.Obj => new[] { "obj" },
+        FileKind.Stl => new[] { "stl" },
+        FileKind.Gltf => new[] { "gltf" },
+        FileKind.Glb => new[] { "glb" },
         _ => new[] { kind.ToString().ToLowerInvariant() },
     };
 
@@ -236,6 +248,7 @@ public static class Formats
         FileCategory.Subtitle => "Subtitle",
         FileCategory.Archive => "Archive",
         FileCategory.Font => "Font",
+        FileCategory.Model => "3D Model",
         _ => category.ToString(),
     };
 
@@ -251,6 +264,7 @@ public static class Formats
         FileCategory.Subtitle => "\uE7F0",     // ClosedCaption
         FileCategory.Archive => "\uF5ED",      // ZipFolder
         FileCategory.Font => "\uE8D2",         // Font
+        FileCategory.Model => "\uECA5",        // 3D Objects
         _ => "\uE8A5",
     };
 }

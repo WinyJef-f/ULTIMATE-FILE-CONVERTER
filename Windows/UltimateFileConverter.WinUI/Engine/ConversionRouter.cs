@@ -172,6 +172,14 @@ public static class ConversionRouter
             return ArchiveRoute(source, target, inputPath, outputPath);
         }
 
+        // --- 3D Model -> 3D Model via Assimp (OBJ, STL, GLTF, GLB) ---
+        if (src == FileCategory.Model && dst == FileCategory.Model)
+        {
+            return ConversionPlan.Single(Tool.Assimp,
+                new[] { "export", "{INPUT}", "{OUTPUT}" },
+                inputPath, outputPath);
+        }
+
         // --- Font -> Font via FontForge (TTF, OTF, WOFF, WOFF2) ---
         // FontForge reads and writes every desktop/web font format and picks the output
         // format from the file extension. Its scripting one-liner opens the source and
@@ -382,7 +390,7 @@ public static class ConversionRouter
                 inputPath, outputPath),
             // No raw decode makes sense for these — copy the bytes under the new extension.
             FileCategory.Document or FileCategory.Spreadsheet or FileCategory.Presentation
-            or FileCategory.Subtitle or FileCategory.Archive or FileCategory.Font or _
+            or FileCategory.Subtitle or FileCategory.Archive or FileCategory.Font or FileCategory.Model or _
                 => ConversionPlan.Single(Tool.Copy, new[] { "{INPUT}", "{OUTPUT}" }, inputPath, outputPath),
         };
     }

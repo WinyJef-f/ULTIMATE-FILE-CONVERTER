@@ -22,6 +22,12 @@ public sealed partial class MainWindow : Window
         _rootView.Initialize(WinRT.Interop.WindowNative.GetWindowHandle(this));
     }
 
+    /// <summary>Enqueues files into the conversion queue — called by App on activation.</summary>
+    public void EnqueueFiles(System.Collections.Generic.IEnumerable<string> paths)
+    {
+        _rootView.ViewModel.AddFiles(paths);
+    }
+
     private void ConfigureAppWindow()
     {
         try

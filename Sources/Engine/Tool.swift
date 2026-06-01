@@ -7,6 +7,7 @@ enum Tool: String, CaseIterable {
     case sevenZip = "7z"
     case calibre = "ebook-convert"
     case fontforge = "fontforge"
+    case assimp = "assimp"
     case cp           // /bin/cp, used for Experimental-mode file copies
     case native       // Sentinel: dispatched in-process to NativeConverter, no subprocess
 

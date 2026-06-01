@@ -55,6 +55,9 @@ public sealed class DependencyService
             new Dependency("FontForge", "FontForge.FontForge", "fontforge.exe",
                 new[] { System.IO.Path.Combine(programFiles, "FontForgeBuilds"), System.IO.Path.Combine(programFilesX86, "FontForgeBuilds") },
                 "Font format conversions (TTF, OTF, WOFF, WOFF2)."),
+            new Dependency("Assimp", "Assimp.Assimp", "assimp.exe",
+                new[] { System.IO.Path.Combine(programFiles, "Assimp", "bin"), System.IO.Path.Combine(programFilesX86, "Assimp", "bin") },
+                "3D model format conversions (OBJ, STL, GLTF, GLB)."),
         };
     }
 

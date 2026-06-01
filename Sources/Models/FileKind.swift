@@ -1,7 +1,7 @@
 import Foundation
 
 enum FileCategory: String, CaseIterable, Hashable {
-    case image, audio, video, document, spreadsheet, presentation, subtitle, archive, font
+    case image, audio, video, document, spreadsheet, presentation, subtitle, archive, font, model
 
     var displayName: String {
         switch self {
@@ -14,6 +14,7 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .subtitle: return "Subtitle"
         case .archive: return "Archive"
         case .font: return "Font"
+        case .model: return "3D Model"
         }
     }
 
@@ -28,6 +29,7 @@ enum FileCategory: String, CaseIterable, Hashable {
         case .subtitle: return "captions.bubble"
         case .archive: return "archivebox"
         case .font: return "textformat"
+        case .model: return "cube"
         }
     }
 }
@@ -53,6 +55,8 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
     case ttf, otf, woff, woff2
     // RAW Photo (source-only — never a conversion target)
     case cr2, nef, arw, dng
+    // 3D Model
+    case obj, stl, gltf, glb
 
     var id: String { rawValue }
 
@@ -76,6 +80,7 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .zip, .sevenz, .tar, .targz: return .archive
         case .ttf, .otf, .woff, .woff2: return .font
         case .cr2, .nef, .arw, .dng: return .image
+        case .obj, .stl, .gltf, .glb: return .model
         }
     }
 
@@ -137,6 +142,10 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .nef: return "Nikon RAW (NEF)"
         case .arw: return "Sony RAW (ARW)"
         case .dng: return "DNG"
+        case .obj: return "OBJ"
+        case .stl: return "STL"
+        case .gltf: return "GLTF"
+        case .glb: return "GLB"
         }
     }
 
@@ -199,6 +208,10 @@ enum FileKind: String, CaseIterable, Codable, Identifiable, Hashable {
         case .nef: return ["nef"]
         case .arw: return ["arw"]
         case .dng: return ["dng"]
+        case .obj: return ["obj"]
+        case .stl: return ["stl"]
+        case .gltf: return ["gltf"]
+        case .glb: return ["glb"]
         }
     }
 

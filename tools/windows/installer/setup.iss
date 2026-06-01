@@ -4,7 +4,7 @@
 ; Sensible defaults are provided so the script can also be opened directly in the Inno IDE.
 
 #ifndef AppVersion
-  #define AppVersion "1.1.0"
+  #define AppVersion "1.2.0"
 #endif
 #ifndef PublishDir
   #define PublishDir "..\..\..\dist\windows\publish"
@@ -58,5 +58,31 @@ Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; Tasks: desktopicon
 
+[Registry]
+; Right-click "Convert with UFC" context menu for all files
+Root: HKCR; Subkey: "*\shell\ConvertWithUFC"; ValueType: string; ValueData: "Convert with UFC"; Flags: uninsdeletekey
+Root: HKCR; Subkey: "*\shell\ConvertWithUFC"; ValueName: "Icon"; ValueType: string; ValueData: """{app}\{#MyAppExe}"",0"
+Root: HKCR; Subkey: "*\shell\ConvertWithUFC\command"; ValueType: string; ValueData: """{app}\{#MyAppExe}"" ""%1"""
+; Add the install directory to the system PATH so ufc.exe is available in terminals
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueName: "Path"; ValueType: expandsz; ValueData: "{olddata};{app}"; Check: NeedsAddPath('{app}')
+
 [Run]
 Filename: "{app}\{#MyAppExe}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+{ Returns True when {app} is not already present anywhere in the system PATH. }
+function NeedsAddPath(AppDir: string): Boolean;
+var
+  OrigPath: string;
+begin
+  if not RegQueryStringValue(
+      HKEY_LOCAL_MACHINE,
+      'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
+      'Path', OrigPath)
+  then begin
+    Result := True;
+    exit;
+  end;
+  Result := Pos(';' + Uppercase(AppDir) + ';',
+               ';' + Uppercase(OrigPath) + ';') = 0;
+end;

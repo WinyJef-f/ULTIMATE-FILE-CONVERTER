@@ -47,14 +47,70 @@ public partial class App : Application
         LogStartupEnvironment();
         try
         {
+            // Single-instance: redirect any second launch to the already-running window.
+            var mainInstance = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey("ufc-main");
+            if (!mainInstance.IsCurrent)
+            {
+                mainInstance.RedirectActivationToAsync(
+                    Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs()
+                ).AsTask().GetAwaiter().GetResult();
+                System.Environment.Exit(0);
+                return;
+            }
+            mainInstance.Activated += OnInstanceActivated;
+
             _window = new MainWindow();
             _window.Activate();
+
+            // Handle files passed on this initial launch (e.g. from right-click context menu).
+            var cmdArgs = System.Environment.GetCommandLineArgs();
+            if (cmdArgs.Length > 1 && _window is MainWindow mw)
+            {
+                var files = cmdArgs.Skip(1)
+                    .Select(p => p.Trim('"'))
+                    .Where(p => System.IO.File.Exists(p))
+                    .ToArray();
+                if (files.Length > 0)
+                    mw.EnqueueFiles(files);
+            }
         }
         catch (System.Exception ex)
         {
             ReportFatal("OnLaunched", ex);
             throw;
         }
+    }
+
+    private void OnInstanceActivated(object? sender, Microsoft.Windows.AppLifecycle.AppActivationArguments e)
+    {
+        _window?.DispatcherQueue?.TryEnqueue(() =>
+        {
+            _window?.Activate();
+            if (e.Data is Windows.ApplicationModel.Activation.ILaunchActivatedEventArgs launchArgs
+                && _window is MainWindow mw)
+            {
+                var files = ParseArguments(launchArgs.Arguments)
+                    .Where(p => System.IO.File.Exists(p))
+                    .ToArray();
+                if (files.Length > 0)
+                    mw.EnqueueFiles(files);
+            }
+        });
+    }
+
+    private static string[] ParseArguments(string commandLine)
+    {
+        var results = new System.Collections.Generic.List<string>();
+        var current = new System.Text.StringBuilder();
+        bool inQuotes = false;
+        foreach (char c in commandLine)
+        {
+            if (c == '"') inQuotes = !inQuotes;
+            else if (c == ' ' && !inQuotes) { if (current.Length > 0) { results.Add(current.ToString()); current.Clear(); } }
+            else current.Append(c);
+        }
+        if (current.Length > 0) results.Add(current.ToString());
+        return results.ToArray();
     }
 
     private static void LogStartupEnvironment()

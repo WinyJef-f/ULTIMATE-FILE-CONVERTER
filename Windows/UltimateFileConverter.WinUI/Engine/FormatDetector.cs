@@ -84,6 +84,9 @@ public static class FormatDetector
         if (StartsWith(head, 0x77, 0x4F, 0x46, 0x46)) return FileKind.Woff;  // "wOFF"
         if (StartsWith(head, 0x77, 0x4F, 0x46, 0x32)) return FileKind.Woff2; // "wOF2"
 
+        // GLB (binary glTF) — magic "glTF"
+        if (StartsWith(head, 0x67, 0x6C, 0x54, 0x46)) return FileKind.Glb;
+
         return null;
     }
 

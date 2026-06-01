@@ -4,7 +4,11 @@
   <p><b>Drop any file. Pick any format. Get it converted &mdash; locally on macOS and Windows.</b></p>
   <p>
     <a href="https://github.com/WinyJef-f/ULTIMATE-FILE-CONVERTER/releases/latest">
-      <img src="https://img.shields.io/badge/download-DMG-0f766e?style=for-the-badge" alt="Download">
+      <img src="https://img.shields.io/badge/download-DMG-0f766e?style=for-the-badge" alt="Download DMG">
+    </a>
+    &nbsp;
+    <a href="https://github.com/WinyJef-f/ULTIMATE-FILE-CONVERTER/releases/latest">
+      <img src="https://img.shields.io/badge/download-EXE-0f766e?style=for-the-badge" alt="Download EXE">
     </a>
   </p>
 </div>
@@ -16,10 +20,12 @@ A universal desktop app for converting files between dozens of formats &mdash; *
 ## Features
 
 - **Drag-and-drop batch conversion.** Drop one file or fifty.
-- **40+ formats** across images, audio, video, documents, spreadsheets, presentations, subtitles, e-books, and fonts.
+- **50+ formats** across images, audio, video, documents, spreadsheets, presentations, subtitles, archives, e-books, fonts, and 3D models.
 - **Smart routing.** The app picks the right tool for each (source, target) pair automatically.
 - **Persistent history** of past conversions, survives across launches.
 - **Configurable quality** &mdash; image quality, audio bitrate, video CRF, output folder.
+- **Right-click "Convert with UFC"** &mdash; context-menu shortcut on macOS (Finder Services) and Windows (shell extension) opens the app pre-loaded with the selected file.
+- **CLI (`ufc`)** &mdash; headless terminal commands for scripting: `ufc convert`, `ufc list-targets`, `ufc version`. Installed alongside the app and added to PATH.
 - **Experimental mode** (opt-in) &mdash; raw-byte fallback that turns *any* file into *any other* file. Results are unpredictable. That&rsquo;s the point.
 - **Real cancellation** &mdash; hit Cancel mid-batch and the running ffmpeg actually dies.
 - **Selectable, copyable error messages** for when something goes sideways.
@@ -58,8 +64,26 @@ The app is not notarized, so on first launch macOS may show a Gatekeeper warning
 | Subtitles | SRT, ASS/SSA, WebVTT, SBV |
 | Archives | ZIP, 7-Zip, TAR, TAR.GZ |
 | Fonts | TTF, OTF, WOFF, WOFF2 |
+| 3D Models | OBJ, STL, GLTF, GLB |
 
 With Experimental mode on, every category can be coerced into every other category via raw-byte reinterpretation.
+
+## CLI usage
+
+The `ufc` command-line tool is installed alongside the app and added to `PATH` by the installer.
+
+```bash
+# Convert a file
+ufc convert input.png output.webp --quality 85
+
+# List valid targets for a given file
+ufc list-targets input.heic
+
+# Print version
+ufc version
+```
+
+Exit codes: `0` success, `1` conversion failure, `2` bad arguments / usage error. Ctrl-C cancels a running conversion cleanly.
 
 ## Building from source
 
@@ -120,6 +144,7 @@ Outputs land in `dist/windows/`: the published app under `publish/` and the Inno
 | [Ghostscript](https://www.ghostscript.com) | Lets ImageMagick read PDFs on Windows (PDF &rarr; image) | AGPL / commercial |
 | [Calibre](https://calibre-ebook.com) (`ebook-convert`) | E-book format conversions (EPUB, MOBI, AZW3) | GPL 3+ |
 | [FontForge](https://fontforge.org) | Font format conversions (TTF, OTF, WOFF, WOFF2) | GPL 3+ |
+| [Assimp](https://assimp.org) | 3D model conversions (OBJ, STL, GLTF, GLB) | BSD 3-Clause |
 
 ## Why these dependencies?
 
@@ -139,6 +164,7 @@ choice &mdash; not a corner cut.
 | **7-Zip** | The widely trusted open-source archiver | ZIP / 7z / TAR / TAR.GZ archive conversion |
 | **Calibre** | The leading open-source e-book manager | E-book conversion (EPUB ↔ MOBI / AZW3, etc.) |
 | **FontForge** | The standard open-source font editor | Font conversion (TTF ↔ OTF ↔ WOFF ↔ WOFF2) |
+| **Assimp** | Open Asset Import Library — supports 40+ 3D formats and is used by Unity, Godot, and many commercial engines | 3D model conversion (OBJ ↔ STL ↔ GLTF ↔ GLB) |
 
 **Why install them instead of bundling them?** Bundling these tools inside the app would
 add hundreds of megabytes, freeze them at whatever version shipped, and mean *we* would be

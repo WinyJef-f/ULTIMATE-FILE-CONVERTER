@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <RootNamespace>UltimateFileConverter.WinUI</RootNamespace>
+    <AssemblyName>ufc</AssemblyName>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <SelfContained>false</SelfContained>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <Version>1.2.0</Version>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
+    <Authors>Jeffrey Heiler</Authors>
+    <Product>ULTIMATE-FILE-CONVERTER</Product>
+  </PropertyGroup>
+
+  <!-- Share engine source files from the WinUI project without moving them. -->
+  <ItemGroup>
+    <Compile Include="..\UltimateFileConverter.WinUI\Engine\ConversionPlan.cs" Link="Engine\ConversionPlan.cs" />
+    <Compile Include="..\UltimateFileConverter.WinUI\Engine\ConversionRouter.cs" Link="Engine\ConversionRouter.cs" />
+    <Compile Include="..\UltimateFileConverter.WinUI\Engine\FormatDetector.cs" Link="Engine\FormatDetector.cs" />
+    <Compile Include="..\UltimateFileConverter.WinUI\Engine\SubtitleConverter.cs" Link="Engine\SubtitleConverter.cs" />
+    <Compile Include="..\UltimateFileConverter.WinUI\Engine\Tool.cs" Link="Engine\Tool.cs" />
+    <Compile Include="..\UltimateFileConverter.WinUI\Engine\ToolRunner.cs" Link="Engine\ToolRunner.cs" />
+    <Compile Include="..\UltimateFileConverter.WinUI\Models\ConversionSettings.cs" Link="Models\ConversionSettings.cs" />
+    <Compile Include="..\UltimateFileConverter.WinUI\Models\FileKind.cs" Link="Models\FileKind.cs" />
+    <Compile Include="..\UltimateFileConverter.WinUI\Services\AppPaths.cs" Link="Services\AppPaths.cs" />
+  </ItemGroup>
+
+</Project>

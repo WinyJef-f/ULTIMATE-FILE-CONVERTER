@@ -15,7 +15,7 @@
 #>
 param(
     [string]$Configuration = "Release",
-    [string]$Version = "1.1.0",
+    [string]$Version = "1.2.0",
     [string]$Runtime = "win-x64",
     [string]$Platform = "x64"
 )
@@ -24,6 +24,7 @@ $ErrorActionPreference = "Stop"
 
 $RepoRoot     = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $Project      = Join-Path $RepoRoot "Windows\UltimateFileConverter.WinUI\UltimateFileConverter.WinUI.csproj"
+$CliProject   = Join-Path $RepoRoot "Windows\UltimateFileConverter.CLI\UltimateFileConverter.CLI.csproj"
 $IconFile     = Join-Path $RepoRoot "Windows\UltimateFileConverter.WinUI\Assets\app.ico"
 $InstallerSrc = Join-Path $PSScriptRoot "installer"
 $DistRoot     = Join-Path $RepoRoot "dist\windows"
@@ -91,6 +92,22 @@ if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
 
 $AppExe = Join-Path $PublishDir "UltimateFileConverter.WinUI.exe"
 if (-not (Test-Path $AppExe)) { throw "Publish did not produce $AppExe" }
+
+# Build the CLI companion (ufc.exe) and copy it into the publish folder.
+Write-Host "==> Building ufc CLI..."
+& dotnet publish $CliProject `
+    -c $Configuration `
+    -r $Runtime `
+    --self-contained false `
+    -p:Version=$Version `
+    -o "$PublishDir"
+if ($LASTEXITCODE -ne 0) { throw "ufc CLI build failed." }
+$UfcExe = Join-Path $PublishDir "ufc.exe"
+if (Test-Path $UfcExe) {
+    Write-Host "    ufc.exe built and staged."
+} else {
+    Write-Warning "ufc.exe was not found in publish folder after build — CLI will be missing from installer."
+}
 
 # Safety net: ensure the app PRI (compiled XAML) is in the publish folder. Without it the app
 # starts but throws XamlParseException 0x802B000A on the first LoadComponent call. The csproj
