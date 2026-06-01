@@ -71,7 +71,7 @@ Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environmen
 Filename: "{app}\{#MyAppExe}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-{ Returns True when {app} is not already present anywhere in the system PATH. }
+// Returns True when the app directory is not already present anywhere in the system PATH.
 function NeedsAddPath(AppDir: string): Boolean;
 var
   OrigPath: string;
