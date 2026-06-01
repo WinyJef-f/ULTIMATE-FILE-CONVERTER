@@ -107,6 +107,13 @@ targets:
               - stl
               - gltf
               - glb
+        NSServices:
+          - NSMenuItem:
+              default: "Convert with UFC"
+            NSMessage: convertWithUFC
+            NSPortName: ULTIMATE-FILE-CONVERTER
+            NSSendFileTypes:
+              - public.item
     settings:
       base:
         PRODUCT_NAME: ULTIMATE-FILE-CONVERTER

@@ -9,6 +9,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         viewModel?.addFiles(urls)
     }
+
+    // Called by macOS when the user selects Services → "Convert with UFC" in Finder.
+    @objc func convertWithUFC(_ pasteboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        guard let urls = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL], !urls.isEmpty else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        viewModel?.addFiles(urls)
+    }
 }
 
 @main
@@ -75,6 +82,8 @@ struct UltimateFileConverterApp: App {
     private func startup() async {
         // Wire the delegate so files opened via "Open With" / context menu reach the queue.
         appDelegate.viewModel = vm
+        // Register the delegate as the NSServices provider so convertWithUFC(_:userData:error:) is called.
+        NSApp.servicesProvider = appDelegate
         // First-run: show Homebrew setup sheet if any tools are missing.
         if BrewDependencyService.shouldOfferFirstRunSetup {
             showSetup = true
