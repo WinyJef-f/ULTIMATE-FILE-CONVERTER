@@ -112,6 +112,8 @@ targets:
               default: "Convert with UFC"
             NSMessage: convertWithUFC
             NSPortName: ULTIMATE-FILE-CONVERTER
+            NSSendTypes:
+              - NSFilenamesPboardType
             NSSendFileTypes:
               - public.item
     settings:
