@@ -35,8 +35,9 @@ OutputBaseFilename=ULTIMATE-FILE-CONVERTER-Setup-{#AppVersion}-x64
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+; x64 binaries run under Windows x64 emulation on ARM64 machines.
+ArchitecturesAllowed=x64 arm64
+ArchitecturesInstallIn64BitMode=x64 arm64
 PrivilegesRequired=admin
 LicenseFile=resources\license.rtf
 InfoAfterFile=resources\readme.rtf

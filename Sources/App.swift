@@ -13,8 +13,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Called by macOS when the user selects Services → "Convert with UFC" in Finder.
     @objc func convertWithUFC(_ pasteboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
         guard let urls = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL], !urls.isEmpty else { return }
-        NSApp.activate(ignoringOtherApps: true)
-        viewModel?.addFiles(urls)
+        let vm = viewModel
+        Task { @MainActor in
+            NSApp.activate(ignoringOtherApps: true)
+            vm?.addFiles(urls)
+        }
     }
 }
 
