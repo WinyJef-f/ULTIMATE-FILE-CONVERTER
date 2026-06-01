@@ -63,7 +63,7 @@ Write-Host "==> Restoring ($MSBuild)..."
     /p:WindowsAppSDKSelfContained=true
 if ($LASTEXITCODE -ne 0) { throw "Restore failed." }
 
-# Explicit Build before Publish: this is the pass that compiles XAML → XBF and runs MakePri,
+# Explicit Build before Publish: this is the pass that compiles XAML -> XBF and runs MakePri,
 # producing $(AssemblyName).pri in the canonical bin dir. /t:Publish with an explicit PublishDir
 # redirects intermediate output and, on its own, can leave the app PRI out of the publish folder.
 Write-Host "==> Building WinUI app ($Runtime)..."
@@ -106,7 +106,7 @@ $UfcExe = Join-Path $PublishDir "ufc.exe"
 if (Test-Path $UfcExe) {
     Write-Host "    ufc.exe built and staged."
 } else {
-    Write-Warning "ufc.exe was not found in publish folder after build — CLI will be missing from installer."
+    Write-Warning "ufc.exe was not found in publish folder after build - CLI will be missing from installer."
 }
 
 # Safety net: ensure the app PRI (compiled XAML) is in the publish folder. Without it the app
