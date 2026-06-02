@@ -1,0 +1,17 @@
+#!/bin/bash
+# Runs as root after the PKG installs. $HOME is the installing user's home directory.
+set -euo pipefail
+
+# Enable "Convert with UFC" in the user's Services preferences so it appears
+# in the Finder right-click Services submenu without any manual System Settings step.
+/usr/bin/defaults write "$HOME/Library/Preferences/com.apple.ServicesMenu.Services" \
+    "Convert with UFC" -bool true
+
+# Register the app with Launch Services so macOS indexes its NSServices entry.
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+    /Applications/ULTIMATE-FILE-CONVERTER.app
+
+# Restart Finder so the new service appears immediately.
+/usr/bin/killall Finder 2>/dev/null || true
+
+exit 0

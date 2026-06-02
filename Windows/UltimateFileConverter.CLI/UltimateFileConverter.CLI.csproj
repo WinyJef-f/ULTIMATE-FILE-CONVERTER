@@ -8,7 +8,7 @@
     <AssemblyName>ufc</AssemblyName>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-    <SelfContained>false</SelfContained>
+    <SelfContained>true</SelfContained>
 
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

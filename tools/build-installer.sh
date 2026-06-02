@@ -74,12 +74,13 @@ else
     echo "    WARNING: ufc CLI binary not found at $UFC_CLI — skipping."
 fi
 
-echo "==> Building component pkg (no postinstall — everything is bundled)..."
+echo "==> Building component pkg..."
 COMPONENT_PKG="$SCRATCH/component.pkg"
 /usr/bin/pkgbuild \
     --root "$PAYLOAD_ROOT" \
     --identifier "$BUNDLE_ID" \
     --version "$VERSION" \
+    --scripts "$PROJECT_DIR/tools/installer/scripts" \
     --install-location "/" \
     "$COMPONENT_PKG"
 

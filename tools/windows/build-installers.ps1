@@ -98,7 +98,7 @@ Write-Host "==> Building ufc CLI..."
 & dotnet publish $CliProject `
     -c $Configuration `
     -r $Runtime `
-    --self-contained false `
+    --self-contained true `
     -p:Version=$Version `
     -o "$PublishDir"
 if ($LASTEXITCODE -ne 0) { throw "ufc CLI build failed." }
