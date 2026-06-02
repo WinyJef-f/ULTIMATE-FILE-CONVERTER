@@ -94,6 +94,9 @@ struct UltimateFileConverterApp: App {
         appDelegate.viewModel = vm
         // Register the delegate as the NSServices provider so convertWithUFC(_:userData:error:) is called.
         NSApp.servicesProvider = appDelegate
+        // Ensure the "Convert with UFC" Finder service is enabled. macOS adds NSServices entries
+        // in a disabled state by default; users would otherwise have to find them in System Settings.
+        enableConvertService()
         // First-run: show Homebrew setup sheet if any tools are missing.
         if BrewDependencyService.shouldOfferFirstRunSetup {
             showSetup = true
@@ -105,6 +108,15 @@ struct UltimateFileConverterApp: App {
             updateReleaseURL = releaseURL
             showUpdateAlert = true
         }
+    }
+
+    private func enableConvertService() {
+        let domain = "com.apple.ServicesMenu.Services" as CFString
+        let key = "Convert with UFC" as CFString
+        // Only write if the user hasn't already configured this service (don't override a deliberate disable).
+        guard CFPreferencesCopyValue(key, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost) == nil else { return }
+        CFPreferencesSetValue(key, kCFBooleanTrue, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
+        CFPreferencesSynchronize(domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
     }
 
     private func addFilesViaPanel() {
