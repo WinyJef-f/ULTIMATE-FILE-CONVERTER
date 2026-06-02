@@ -111,12 +111,10 @@ struct UltimateFileConverterApp: App {
     }
 
     private func enableConvertService() {
-        let domain = "com.apple.ServicesMenu.Services" as CFString
-        let key = "Convert with UFC" as CFString
-        // Only write if the user hasn't already configured this service (don't override a deliberate disable).
-        guard CFPreferencesCopyValue(key, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost) == nil else { return }
-        CFPreferencesSetValue(key, kCFBooleanTrue, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
-        CFPreferencesSynchronize(domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
+        guard let defaults = UserDefaults(suiteName: "com.apple.ServicesMenu.Services") else { return }
+        guard defaults.value(forKey: "Convert with UFC") == nil else { return }
+        defaults.set(true, forKey: "Convert with UFC")
+        defaults.synchronize()
     }
 
     private func addFilesViaPanel() {

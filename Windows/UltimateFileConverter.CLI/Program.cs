@@ -7,6 +7,7 @@ internal static class Program
 {
     private static async Task<int> Main(string[] args)
     {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
         if (args.Length == 0)
         {
             PrintHelp();

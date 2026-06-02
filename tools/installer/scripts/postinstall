@@ -1,17 +1,23 @@
 #!/bin/bash
-# Runs as root after the PKG installs. $HOME is the installing user's home directory.
+# Runs as root after the PKG installs.
 set -euo pipefail
 
-# Enable "Convert with UFC" in the user's Services preferences so it appears
-# in the Finder right-click Services submenu without any manual System Settings step.
-/usr/bin/defaults write "$HOME/Library/Preferences/com.apple.ServicesMenu.Services" \
-    "Convert with UFC" -bool true
+# Identify the actual logged-in user (the script runs as root).
+CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null || true)
+if [[ -z "$CONSOLE_USER" || "$CONSOLE_USER" == "root" ]]; then
+    exit 0
+fi
 
-# Register the app with Launch Services so macOS indexes its NSServices entry.
+# Enable "Convert with UFC" using the domain-name form of defaults write
+# (not the full-path form, which bypasses cfprefsd and fails on macOS 15).
+sudo -u "$CONSOLE_USER" /usr/bin/defaults write com.apple.ServicesMenu.Services \
+    "Convert with UFC" -bool true 2>/dev/null || true
+
+# Register the app with Launch Services so the NSServices entry is indexed.
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
     /Applications/ULTIMATE-FILE-CONVERTER.app
 
-# Restart Finder so the new service appears immediately.
-/usr/bin/killall Finder 2>/dev/null || true
+# Restart Finder as the actual user so the service appears immediately.
+sudo -u "$CONSOLE_USER" /usr/bin/killall Finder 2>/dev/null || true
 
 exit 0
